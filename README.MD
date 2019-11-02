@@ -17,6 +17,7 @@ This is a small node.js script that will allow you to easily generate an index.j
 1. Open a command prompt
 2. Navigate to the folder containing the generator
 3. Run `yarn install`
+4. Run `pip3 install Crypto`
 
 # Usage
 
