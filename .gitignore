@@ -1,0 +1,10 @@
+output/
+shop/
+node_modules/
+
+credentials.json
+token.json
+*.log
+yarn.lock
+*.php
+*.old

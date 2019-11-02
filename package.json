@@ -1,0 +1,29 @@
+{
+	"name": "tinfoil_gdrive_generator",
+	"description": "Builds a HTML file for usage in Tinfoil",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+	  "start": "node index.js"
+	},
+	"repository": {
+	  "type": "git",
+	  "url": "https://github.com/BigBrainAFK/tinfoil_gdrive_generator.git"
+	},
+	"keywords": [
+	  "google",
+	  "gdrive",
+	  "spreadsheet"
+	],
+	"author": "BigBrainAFK",
+	"license": "GPL-3.0-only",
+	"bugs": {
+	  "url": "https://github.com/BigBrainAFK/tinfoil_gdrive_generator/issues"
+	},
+	"homepage": "https://github.com/BigBrainAFK/tinfoil_gdrive_generator",
+	"dependencies": {
+	  "googleapis": "^44.0.0",
+	  "moment": "^2.24.0"
+	}
+  }
+  

@@ -1,0 +1,8 @@
+{
+	"_c1": "Weather or not the folder 'NSP Dump' will be indexed",
+	"listNSP": true,
+	"_c2": "Weather or not the folder 'NSZ' will be indexed",
+	"listNSZ": true,
+	"_c3": "Weather or not the XCI folders will be indexed",
+	"listOthers": true
+}
