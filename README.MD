@@ -34,6 +34,7 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 |Flag|Required|Argument value|
 |--|--|--|
+|`-auto`|❌||
 |`-debug`|❌||
 |`-source`|❌|Number or Google Shared Drive ID|
 |`-root`|❌|Google Folder ID|
@@ -42,18 +43,18 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 Now that we established the flags lets see some examples:
 
-`node index.js -source SHARED_DRIVE_ID`
+`node index.js -auto -source SHARED_DRIVE_ID`
 
 This will look for folders called `NSP Dump`, `NSZ`, `XCI Trimmed`, `Custom XCI` in the provided shared drive's root directory. (You can configure what types of files it will look for using the `config.json`)
 
-`node index.js -source SHARED_DRIVE_ID -root FOLDER_ID`
+`node index.js -auto -source SHARED_DRIVE_ID -root FOLDER_ID`
 
 This will do almost the same as not providing a folder id. The only difference being that it will look for the folders in the provided folder instead of the shared drive's root directory.
 
-`node index.js -source SHARED_DRIVE_ID -upload y`
+`node index.js -auto -source SHARED_DRIVE_ID -upload y`
 
 This will upload the resulting index to your Google `mydrive` location.
 
-`node index.js -source SHARED_DRIVE_ID -uploadDrive y -upload y`
+`node index.js -auto -source SHARED_DRIVE_ID -uploadDrive y -upload y`
 
 This will upload the resulting file to the source shared drive if one was provided. This cant be used without also setting upload to `y`.
