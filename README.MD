@@ -34,6 +34,7 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 |Flag|Required|Argument value|
 |--|--|--|
+|`-auto`|❌||
 |`-debug`|❌||
 |`-source`|❌|Number or Google Shared Drive ID|
 |`-root`|❌|Google Folder ID|
