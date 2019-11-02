@@ -246,6 +246,7 @@ async function listDriveFiles(driveId = null) {
 	}
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
+	if (!fs.existsSync('shop/')) fs.mkdirSync('shop/');
 
 	fs.writeFileSync('output/index.json', JSON.stringify(fileListJson, null, '\t'));
 
