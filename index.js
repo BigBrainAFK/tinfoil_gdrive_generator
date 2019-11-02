@@ -179,8 +179,8 @@ async function listDriveFiles(driveId = null) {
 
 	let rootfolder = flags.root;
 
-	if (!flags.root && !flags.auto) rootfolder = await question('Whats the root folder id: ');
-	if (!flags.root && flags.auto) {
+	if (!rootfolder && !flags.auto) rootfolder = await question('Whats the root folder id: ');
+	if (!rootfolder && flags.auto) {
 		debugMessage('Invalid root argument. Assuming shared drive as root.');
 	}
 
