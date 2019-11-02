@@ -3,6 +3,7 @@
 const progArgs = process.argv.slice(2);
 const flags = {};
 flags.auto = getArgument('auto', true, false);
+flags.auth = getArgument('auth', true, false);
 flags.debug = getArgument('debug', true, false);
 flags.choice = getArgument('source', false);
 flags.root = getArgument('root', false);
@@ -50,6 +51,11 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
 let driveAPI;
 let selectedDrive;
+
+const outFilename = 'index.json';
+
+const outputPath = path.join('output', outFilename).replace('\\', '\\\\');
+const encPath = path.join('shop', outFilename).replace('\\', '\\\\');
 
 const fileListJson = {
 	files: [],
@@ -248,9 +254,9 @@ async function listDriveFiles(driveId = null) {
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
 	if (!fs.existsSync('shop/')) fs.mkdirSync('shop/');
 
-	fs.writeFileSync('output/index.json', JSON.stringify(fileListJson, null, '\t'));
+	fs.writeFileSync(outputPath, JSON.stringify(fileListJson, null, '\t'));
 
-	const python = require('child_process').spawn('python3', ['encrypt.py', 'output/index.json', 'shop/index.json']);
+	await encrypt();
 
 	console.log('Generation of HTML completed.');
 	console.log(`Took: ${moment.utc(moment().diff(startTime)).format('HH:mm:ss.SSS')}`);
@@ -331,7 +337,7 @@ async function addToFile(folder, driveId = null) {
 					size: Number(file.size)
 				}
 
-				if (!file.permissionIds.includes('anyoneWithLink')) {
+				if (!file.permissionIds.includes('anyoneWithLink') && flags.auth) {
 					const permissionRequest = {
 						fileId: file.id,
 						requestBody: {
@@ -351,10 +357,11 @@ async function addToFile(folder, driveId = null) {
 
 					await driveAPI.permissions.create(permissionRequest).catch(console.error);
 					debugMessage('Created perms');
+				} if (!flags.auth) {
+					debugMessage('Automatig authing disabled. Won\'t set permissions.')
+				} else {
+					debugMessage('Already has perms');
 				}
-			 else {
-				 debugMessage('Already has perms');
-			 }
 
 				fileListJson.files.push(jsonFile);
 			};
@@ -390,7 +397,7 @@ async function writeToDrive(driveId = null) {
 
 async function doUpload(driveId = null) {
 	return new Promise(async (resolve, reject) => {
-		const buf = Buffer.from(fs.readFileSync('shop/index.json'), 'binary');
+		const buf = Buffer.from(fs.readFileSync(encPath), 'binary');
 		const buffer = Uint8Array.from(buf);
 		var bufferStream = new stream.PassThrough();
 		bufferStream.end(buffer);
@@ -441,6 +448,21 @@ function retrievePageOfFiles(options, result) {
 		} else {
 			resolve(result);
 		}
+	});
+}
+
+function encrypt() {
+	return new Promise((resolve, reject) => {
+		console.log(outputPath);
+		console.log(encPath);
+		const python = require('child_process').spawn('python3', ['encrypt.py', outputPath, encPath]);
+
+		python.stdout.pipe(process.stdout);
+		python.stderr.pipe(process.stderr);
+
+		python.on('exit', () => {
+			resolve();
+		});
 	});
 }
 
