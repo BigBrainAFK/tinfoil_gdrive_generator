@@ -250,7 +250,7 @@ async function listDriveFiles(driveId = null) {
 
 	fs.writeFileSync('output/index.json', JSON.stringify(fileListJson, null, '\t'));
 
-	const python = require('child_process').spawn('python3', ['encrypt.py', 'output\\index.json', 'shop\\index.json']);
+	const python = require('child_process').spawn('python3', ['encrypt.py', 'output/index.json', 'shop/index.json']);
 
 	console.log('Generation of HTML completed.');
 	console.log(`Took: ${moment.utc(moment().diff(startTime)).format('HH:mm:ss.SSS')}`);
