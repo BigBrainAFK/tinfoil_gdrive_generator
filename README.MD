@@ -34,6 +34,7 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 |Flag|Required|Argument value|
 |--|--|--|
+|`-auth`|❌||
 |`-auto`|❌||
 |`-debug`|❌||
 |`-source`|❌|Number or Google Shared Drive ID|
@@ -41,6 +42,13 @@ Here I will explain on how to automate this tool for usage with cron etc.
 |`-upload`|❌|Either `y` or `n`|
 |`-uploadDrive`|❌|Either `y` or `n`|
 
+#### Auth flag note
+The auth flag will set every file the script goes through to be accessible by anyone with the link.
+This is only for people who dont indent to give others direct access to the stash but only via the index file.
+The faster and more prefered way is to auth Tinfoil with GDrive by setting up the credentials of the right account in NUT.
+Then connect your Tinfoil to nut either via USB or Network. After that you can access the index file content even without sharing each file.
+
+### Examples of automation
 Now that we established the flags lets see some examples:
 
 `node index.js -auto -source SHARED_DRIVE_ID`
