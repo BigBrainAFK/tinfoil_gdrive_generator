@@ -367,8 +367,8 @@ async function addToFile(folder, driveId = null) {
 async function writeToDrive(driveId = null) {
 	let answer = flags.upload;
 	
-	if (!flags.upload && !auto) answer = await question('Do you want to upload the HTML to your google drive? [y/n]: ');
-	if (!flags.upload && auto) {
+	if (!answer && !auto) answer = await question('Do you want to upload the HTML to your google drive? [y/n]: ');
+	if (!answer && auto) {
 		debugMessage('Invalid upload argument. Assuming to not upload the file.')
 	}
 
