@@ -139,14 +139,14 @@ async function choice() {
 
 	if (!Number(chosen) && chosen !== null) chosen = result.findIndex(e => e.id === chosen) + 2;
 
-	if (!chosen && !auto) {
+	if (!chosen && !flags.auto) {
 		console.log('1: Your own drive');
 		for (const gdrive of result) {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
 		chosen = Number(await question('Enter your choice: '));
-	} else if (!chosen && auto) {
+	} else if (!chosen && flags.auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
@@ -179,8 +179,8 @@ async function listDriveFiles(driveId = null) {
 
 	let rootfolder = flags.root;
 
-	if (!flags.root && !auto) rootfolder = await question('Whats the root folder id: ');
-	if (!flags.root && auto) {
+	if (!flags.root && !flags.auto) rootfolder = await question('Whats the root folder id: ');
+	if (!flags.root && flags.auto) {
 		debugMessage('Invalid root argument. Assuming shared drive as root.');
 	}
 
@@ -257,8 +257,8 @@ async function listDriveFiles(driveId = null) {
 	if (driveId) {
 		let driveAnswer = flags.uploadDrive;
 		
-		if (!driveAnswer && !auto) driveAnswer = await question(`Write to ${selectedDrive}? [y/n]:`);
-		if (!driveAnswer && auto) {
+		if (!driveAnswer && !flags.auto) driveAnswer = await question(`Write to ${selectedDrive}? [y/n]:`);
+		if (!driveAnswer && flags.auto) {
 			debugMessage('Invalid uploadDrive argument. Assuming no upload to shared drive.');
 			writeToDrive();
 		}
@@ -367,8 +367,8 @@ async function addToFile(folder, driveId = null) {
 async function writeToDrive(driveId = null) {
 	let answer = flags.upload;
 	
-	if (!answer && !auto) answer = await question('Do you want to upload the HTML to your google drive? [y/n]: ');
-	if (!answer && auto) {
+	if (!answer && !flags.auto) answer = await question('Do you want to upload the HTML to your google drive? [y/n]: ');
+	if (!answer && flags.auto) {
 		debugMessage('Invalid upload argument. Assuming to not upload the file.')
 	}
 
@@ -376,7 +376,7 @@ async function writeToDrive(driveId = null) {
 		await doUpload(driveId)
 	}
 
-	if (!auto) {
+	if (!flags.auto) {
 		process.stdout.write('\nPress any key to exit...');
 	
 		process.stdin.setRawMode(true);
