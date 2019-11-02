@@ -54,8 +54,8 @@ let selectedDrive;
 
 const outFilename = 'index.json';
 
-const outputPath = path.join('output', outFilename).replace('\\', '\\\\');
-const encPath = path.join('shop', outFilename).replace('\\', '\\\\');
+const outputPath = path.join('output', outFilename);
+const encPath = path.join('shop', outFilename);
 
 const fileListJson = {
 	files: [],
