@@ -146,7 +146,7 @@ async function choice() {
 		}
 	
 		chosen = Number(await question('Enter your choice: '));
-	} else if (!choden && auto) {
+	} else if (!chosen && auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
