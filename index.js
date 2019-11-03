@@ -206,26 +206,36 @@ async function listDriveFiles(driveId = null) {
 
 	let res_folders = await retrieveAllFiles(folderOptions).catch(console.error);
 
-	const order = ['base', 'dlc', 'updates', 'Custom XCI', 'Custom XCI JP', 'Special Collection', 'XCI Trimmed'];
+	console.log(res_folders)
+
+	if (res_folders.length < 1) return new Error('No folders found in the specified drive/rootfolder');
+
+	const order = ['base', 'dlc', 'updates', 'XCI Trimmed', 'Custom XCI', 'Custom XCI JP', 'Special Collection'];
 	const order_nsz = ['base', 'dlc', 'updates'];
 		
 	let folders = [];
 	let folders_nsz = [];
 
 	if (listNSP) {
-		folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${res_folders[res_folders.map(e => e.name).indexOf('NSP Dumps')].id}\' in parents`;
+		const nspFolder = res_folders[res_folders.map(e => e.name).indexOf('NSP Dumps')];
 
-		const temp = await retrieveAllFiles(folderOptions).catch(console.error);
-	
-		const res_nsp = res_folders.concat(temp).filter(folder => order.includes(folder.name));
-	
-		for (const folder of res_nsp) {
-			folders[order.indexOf(folder.name)] = folder
-		};
+		if (nspFolder) {
+			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${nspFolder.id}\' in parents`;
 
-		folders = folders.filter(arr => !!arr);
-	
-		await goThroughFolders(driveId, folders, ['base', 'dlc', 'updates']);
+			const temp = await retrieveAllFiles(folderOptions).catch(console.error);
+		
+			const res_nsp = res_folders.concat(temp).filter(folder => order.includes(folder.name));
+		
+			for (const folder of res_nsp) {
+				folders[order.indexOf(folder.name)] = folder
+			};
+
+			folders = folders.filter(arr => !!arr);
+		
+			await goThroughFolders(driveId, folders, ['base', 'dlc', 'updates']);
+		} else {
+			console.error('No NSP folder found');
+		}
 	} else {
 		for (const folder of res_folders.filter(folder => order.includes(folder.name))) {
 			folders[order.indexOf(folder.name)] = folder
@@ -235,17 +245,23 @@ async function listDriveFiles(driveId = null) {
 	}
 
 	if (listNSZ) {
-		folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${res_folders[res_folders.map(e => e.name).indexOf('NSZ')].id}\' in parents`;
-	
-		const res_nsz = (await retrieveAllFiles(folderOptions).catch(console.error)).filter(folder => order_nsz.includes(folder.name));
-	
-		for (const folder of res_nsz) {
-			folders_nsz[order_nsz.indexOf(folder.name)] = folder
-		};
+		const nszFolder = res_folders[res_folders.map(e => e.name).indexOf('NSZ')];
 
-		folders_nsz = folders_nsz.filter(arr => arr !== null);
-
-		await goThroughFolders(driveId, folders_nsz, ['base', 'dlc', 'updates']);
+		if (nszFolder) {
+			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${nszFolder.id}\' in parents`;
+		
+			const res_nsz = (await retrieveAllFiles(folderOptions).catch(console.error)).filter(folder => order_nsz.includes(folder.name));
+		
+			for (const folder of res_nsz) {
+				folders_nsz[order_nsz.indexOf(folder.name)] = folder
+			};
+	
+			folders_nsz = folders_nsz.filter(arr => arr !== null);
+	
+			await goThroughFolders(driveId, folders_nsz, ['base', 'dlc', 'updates']);
+		} else {
+			console.error('No NSZ Folder found');
+		}
 	}
 
 	if (listXCI) {
