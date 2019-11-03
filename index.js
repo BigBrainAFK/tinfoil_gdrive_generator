@@ -143,17 +143,23 @@ async function choice() {
 	let x = 1;
 
 	let chosen = flags.choice || null;
+	const chosenIsNaN = isNaN(Number(chosen));
 
-	if (!Number(chosen) && chosen !== null) chosen = result.findIndex(e => e.id === chosen) + 2;
+	if (chosenIsNaN && chosen !== null) {
+		const foundIndex = result.findIndex(e => e.id === chosen);
 
-	if (!Number(chosen) && !flags.auto) {
+		if (foundIndex < 0) chosen = null
+		else chosen = foundIndex + 2;
+	}
+
+	if (chosenIsNaN && !flags.auto) {
 		console.log('1: Your own drive');
 		for (const gdrive of result) {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
 		chosen = Number(await question('Enter your choice: '));
-	} else if (!Number(chosen) && flags.auto) {
+	} else if (chosenIsNaN && flags.auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
@@ -174,7 +180,7 @@ async function choice() {
 }
 
 async function listDriveFiles(driveId = null) {
-	if (!listNSP && !listNSZ && !listXCI) {
+	if (!listNSP && !listNSZ && !listXCI && !listCustomXCI) {
 		console.log('Nothing to add to the HTML file')
 		process.exit();
 	}
