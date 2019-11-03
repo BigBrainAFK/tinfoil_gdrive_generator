@@ -4,5 +4,7 @@
 	"_c2": "Weather or not the folder 'NSZ' will be indexed",
 	"listNSZ": true,
 	"_c3": "Weather or not the XCI folders will be indexed",
-	"listOthers": true
+	"listXCI": true,
+	"_c4": "Weather or not the Custom XCI folder will be indexed",
+	"listCustomXCI": false
 }

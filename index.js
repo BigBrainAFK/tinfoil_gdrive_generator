@@ -45,7 +45,8 @@ if (fs.existsSync('./conf.json')) {
 
 const listNSP = conf.listNSP || null;
 const listNSZ = conf.listNSZ || null;
-const listOthers = conf.listOthers || null;
+const listXCI = conf.listXCI || null;
+const listCustomXCI = conf.listCustomXCI || null;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
@@ -171,7 +172,7 @@ async function choice() {
 }
 
 async function listDriveFiles(driveId = null) {
-	if (!listNSP && !listNSZ && !listOthers) {
+	if (!listNSP && !listNSZ && !listXCI) {
 		console.log('Nothing to add to the HTML file')
 		process.exit();
 	}
@@ -247,8 +248,12 @@ async function listDriveFiles(driveId = null) {
 		await goThroughFolders(driveId, folders_nsz, ['base', 'dlc', 'updates']);
 	}
 
-	if (listOthers) {
-		await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'XCI Trimmed', 'Special Collection']);
+	if (listXCI) {
+		await goThroughFolders(driveId, folders, ['XCI Trimmed']);
+	}
+
+	if (listCustomXCI) {
+		await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
 	}
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
