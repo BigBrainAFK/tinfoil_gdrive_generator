@@ -146,19 +146,21 @@ async function choice() {
 
 	if (!Number(chosen) && chosen !== null) chosen = result.findIndex(e => e.id === chosen) + 2;
 
-	if (!chosen && !flags.auto) {
+	if (!Number(chosen) && !flags.auto) {
 		console.log('1: Your own drive');
 		for (const gdrive of result) {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
 		chosen = Number(await question('Enter your choice: '));
-	} else if (!chosen && flags.auto) {
+	} else if (!Number(chosen) && flags.auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
 		x += result.length;
 	}
+
+	chosen = Number(chosen);
 
 	if (chosen === 1) {
 		listDriveFiles();
@@ -205,8 +207,6 @@ async function listDriveFiles(driveId = null) {
 	folderOptions.q += ` and \'${rootfolder ? rootfolder : driveId}\' in parents`;
 
 	let res_folders = await retrieveAllFiles(folderOptions).catch(console.error);
-
-	console.log(res_folders)
 
 	if (res_folders.length < 1) return new Error('No folders found in the specified drive/rootfolder');
 
