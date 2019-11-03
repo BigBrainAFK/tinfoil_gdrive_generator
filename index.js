@@ -214,7 +214,7 @@ async function listDriveFiles(driveId = null) {
 
 	let res_folders = await retrieveAllFiles(folderOptions).catch(console.error);
 
-	if (res_folders.length < 1) return new Error('No folders found in the specified drive/rootfolder');
+	if (res_folders.length < 1) throw new Error('No folders found in the specified drive/rootfolder');
 
 	const order = ['base', 'dlc', 'updates', 'XCI Trimmed', 'Custom XCI', 'Custom XCI JP', 'Special Collection'];
 	const order_nsz = ['base', 'dlc', 'updates'];
