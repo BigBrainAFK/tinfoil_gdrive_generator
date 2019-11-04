@@ -43,10 +43,10 @@ if (fs.existsSync('./conf.json')) {
 	conf = require('./conf.json');
 }
 
-const listNSP = conf.listNSP || null;
-const listNSZ = conf.listNSZ || null;
-const listXCI = conf.listXCI || null;
-const listCustomXCI = conf.listCustomXCI || null;
+conf.listNSP = conf.listNSP || false;
+conf.listNSZ = conf.listNSZ || false;
+conf.listXCI = conf.listXCI || false;
+conf.listCustomXCI = conf.listCustomXCI || false;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
@@ -148,25 +148,25 @@ async function choice() {
 	if (chosenIsNaN && chosen !== null) {
 		const foundIndex = result.findIndex(e => e.id === chosen);
 
-		if (foundIndex < 0) chosen = null
+		if (foundIndex < 0) chosen = null;
 		else chosen = foundIndex + 2;
 	}
 
-	if (chosenIsNaN && !flags.auto) {
+	chosen = Number(chosen);
+
+	if (!chosen && !flags.auto) {
 		console.log('1: Your own drive');
 		for (const gdrive of result) {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
 		chosen = Number(await question('Enter your choice: '));
-	} else if (chosenIsNaN && flags.auto) {
+	} else if (!chosen && flags.auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
 		x += result.length;
 	}
-
-	chosen = Number(chosen);
 
 	if (chosen === 1) {
 		listDriveFiles();
@@ -177,10 +177,10 @@ async function choice() {
 		if (flags.choice) flags.choice = null;
 		choice();
 	}
-}
+}1
 
 async function listDriveFiles(driveId = null) {
-	if (!listNSP && !listNSZ && !listXCI && !listCustomXCI) {
+	if (!conf.listNSP && !conf.listNSZ && !conf.listXCI && !conf.listCustomXCI) {
 		console.log('Nothing to add to the HTML file')
 		process.exit();
 	}
@@ -222,7 +222,7 @@ async function listDriveFiles(driveId = null) {
 	let folders = [];
 	let folders_nsz = [];
 
-	if (listNSP) {
+	if (conf.listNSP) {
 		const nspFolder = res_folders[res_folders.map(e => e.name).indexOf('NSP Dumps')];
 
 		if (nspFolder) {
@@ -250,7 +250,7 @@ async function listDriveFiles(driveId = null) {
 		folders = folders.filter(arr => !!arr);
 	}
 
-	if (listNSZ) {
+	if (conf.listNSZ) {
 		const nszFolder = res_folders[res_folders.map(e => e.name).indexOf('NSZ')];
 
 		if (nszFolder) {
@@ -270,11 +270,11 @@ async function listDriveFiles(driveId = null) {
 		}
 	}
 
-	if (listXCI) {
+	if (conf.listXCI) {
 		await goThroughFolders(driveId, folders, ['XCI Trimmed']);
 	}
 
-	if (listCustomXCI) {
+	if (conf.listCustomXCI) {
 		await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
 	}
 
