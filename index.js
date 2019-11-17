@@ -47,6 +47,7 @@ conf.listNSP = conf.listNSP || false;
 conf.listNSZ = conf.listNSZ || false;
 conf.listXCI = conf.listXCI || false;
 conf.listCustomXCI = conf.listCustomXCI || false;
+conf.indexFileId = conf.indexFileId || '';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
@@ -275,6 +276,25 @@ async function listDriveFiles(driveId = null) {
 	}
 
 	if (conf.listCustomXCI) {
+		const customXCIFolder = folders[folders.map(e => e.name).indexOf('Custom XCI')];
+
+		if (customXCIFolder) {
+			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${customXCIFolder.id}\' in parents`;
+
+			const temp = await retrieveAllFiles(folderOptions).catch(console.error);
+		
+			const res_xci = folders.concat(temp).filter(folder => order.includes(folder.name));
+		
+			for (const folder of res_xci) {
+				folders[order.indexOf(folder.name)] = folder
+			};
+
+			folders = folders.filter(arr => !!arr);
+		
+			await goThroughFolders(driveId, folders, ['base', 'dlc', 'updates']);
+		} else {
+			console.error('No NSP folder found');
+		}
 		await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
 	}
 
@@ -285,7 +305,7 @@ async function listDriveFiles(driveId = null) {
 
 	await encrypt();
 
-	console.log('Generation of HTML completed.');
+	console.log('Generation of JSON completed.');
 	console.log(`Took: ${moment.utc(moment().diff(startTime)).format('HH:mm:ss.SSS')}`);
 
 	if (driveId) {
@@ -384,7 +404,7 @@ async function addToFile(folder, driveId = null) {
 
 					await driveAPI.permissions.create(permissionRequest).catch(console.error);
 					debugMessage('Created perms');
-				} if (!flags.auth) {
+				} else if (!flags.auth) {
 					debugMessage('Automatig authing disabled. Won\'t set permissions.')
 				} else {
 					debugMessage('Already has perms');
@@ -424,29 +444,53 @@ async function writeToDrive(driveId = null) {
 
 async function doUpload(driveId = null) {
 	return new Promise(async (resolve, reject) => {
-		const buf = Buffer.from(fs.readFileSync(encPath), 'binary');
-		const buffer = Uint8Array.from(buf);
-		var bufferStream = new stream.PassThrough();
-		bufferStream.end(buffer);
 		const media = {
-			body: bufferStream,
+			mimeType: 'application/json',
+			body: fs.createReadStream(encPath),
 		};
+
+		const fileMetadata = {};
 	
-		console.log('Creating the files.html on the drive...')
-	
-		const fileMetadata = {
-			name: 'index.json'
-		};
-	
-		if (driveId) {
-			fileMetadata.parents = [driveId];
-		}
-	
-		await driveAPI.files.create({
-			resource: fileMetadata,
+		const requestData = {
 			media,
-			fields: 'id'
-		}).catch(console.error);
+		};
+
+		if (driveId) {
+			requestData.driveId = driveId;
+			requestData.corpora = 'drive';
+			requestData.includeItemsFromAllDrives = true;
+			requestData.supportsAllDrives = true;
+		}
+
+		if (conf.indexFileId) {	
+			console.log(`Updating the ${outFilename} on the drive...`);
+
+			requestData.resource = fileMetadata;
+			requestData.fileId = conf.indexFileId;
+	
+			await driveAPI.files.update(requestData).catch(console.error);	  
+		} else {
+			console.log(`Creating the ${outFilename} on the drive...`);
+	
+			fileMetadata.name = outFilename;
+	
+			if (driveId) {
+				if (flags.root) {
+					fileMetadata.parents = [flags.root];
+				} else {
+					fileMetadata.parents = [driveId];
+				}
+			}
+	
+			requestData.resource = fileMetadata;
+			requestData.fields = 'id';
+
+			const file = await driveAPI.files.create(requestData).catch(console.error);
+	
+			conf.indexFileId = file.data.id;
+	
+			fs.writeFileSync('conf.json', JSON.stringify(conf, null, '\t'));
+		}
 	
 		console.log('Done!');
 		resolve();
