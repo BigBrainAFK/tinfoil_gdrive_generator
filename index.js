@@ -291,11 +291,10 @@ async function listDriveFiles(driveId = null) {
 
 			folders = folders.filter(arr => !!arr);
 		
-			await goThroughFolders(driveId, folders, ['base', 'dlc', 'updates']);
+			await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
 		} else {
-			console.error('No NSP folder found');
+			console.error('No Custom XCI folder found');
 		}
-		await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
 	}
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
