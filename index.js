@@ -379,7 +379,7 @@ async function addToFile(folder, driveId = null) {
 				}
 
 				const jsonFile = {
-					url: `https://docs.google.com/uc?export=download&id=${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
+					url: `gdrive:/${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
 					size: Number(file.size)
 				}
 
