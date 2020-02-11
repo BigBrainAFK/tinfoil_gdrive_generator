@@ -1,10 +1,11 @@
 {
-	"_c1": "Weather or not the folder 'NSP Dump' will be indexed",
+	"_c1": "Indicates if the 'NSP Dumps' folder gets indexed",
 	"listNSP": true,
-	"_c2": "Weather or not the folder 'NSZ' will be indexed",
+	"_c2": "Indicates if the 'NSZ' folder gets indexed",
 	"listNSZ": true,
-	"_c3": "Weather or not the XCI folders will be indexed",
+	"_c3": "Indicates if the 'XCI' and 'Custom XCI' folders get indexed",
 	"listXCI": true,
-	"_c4": "Weather or not the Custom XCI folder will be indexed",
-	"listCustomXCI": false
+	"_c4": "Currently not functioning",
+	"listCustomXCI": true,
+	"indexFileId": ""
 }

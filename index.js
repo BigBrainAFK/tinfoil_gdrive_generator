@@ -34,8 +34,8 @@ const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
 const moment = require('moment');
-const stream = require('stream');
 const path = require('path');
+const fetch = require('node-fetch');
 
 let conf = {};
 
@@ -48,6 +48,7 @@ conf.listNSZ = conf.listNSZ || false;
 conf.listXCI = conf.listXCI || false;
 conf.listCustomXCI = conf.listCustomXCI || false;
 conf.indexFileId = conf.indexFileId || '';
+conf.lastCommit = conf.lastCommit || '';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
@@ -72,7 +73,7 @@ const rl = readline.createInterface({
 fs.readFile('credentials.json', (err, content) => {
 	if (err) return console.log('Error loading client secret file:', err);
 
-	authorize(JSON.parse(content), choice);
+	checkCommit().then(() => authorize(JSON.parse(content), choice));
 });
 
 /**
@@ -181,7 +182,7 @@ async function choice() {
 }1
 
 async function listDriveFiles(driveId = null) {
-	if (!conf.listNSP && !conf.listNSZ && !conf.listXCI && !conf.listCustomXCI) {
+	if (!conf.listNSP && !conf.listNSZ && !conf.listXCI) {
 		console.log('Nothing to add to the HTML file')
 		process.exit();
 	}
@@ -208,94 +209,8 @@ async function listDriveFiles(driveId = null) {
 	} else {
 		folderOptions.corpora = 'user';
 	}
-
-	folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false`;
-
-	folderOptions.q += ` and \'${rootfolder ? rootfolder : driveId}\' in parents`;
-
-	let res_folders = await retrieveAllFiles(folderOptions).catch(console.error);
-
-	if (res_folders.length < 1) throw new Error('No folders found in the specified drive/rootfolder');
-
-	const order = ['base', 'dlc', 'updates', 'XCI Trimmed', 'Custom XCI', 'Custom XCI JP', 'Special Collection'];
-	const order_nsz = ['base', 'dlc', 'updates'];
 		
-	let folders = [];
-	let folders_nsz = [];
-
-	if (conf.listNSP) {
-		const nspFolder = res_folders[res_folders.map(e => e.name).indexOf('NSP Dumps')];
-
-		if (nspFolder) {
-			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${nspFolder.id}\' in parents`;
-
-			const temp = await retrieveAllFiles(folderOptions).catch(console.error);
-		
-			const res_nsp = res_folders.concat(temp).filter(folder => order.includes(folder.name));
-		
-			for (const folder of res_nsp) {
-				folders[order.indexOf(folder.name)] = folder
-			};
-
-			folders = folders.filter(arr => !!arr);
-		
-			await goThroughFolders(driveId, folders, ['base', 'dlc', 'updates']);
-		} else {
-			console.error('No NSP folder found');
-		}
-	} else {
-		for (const folder of res_folders.filter(folder => order.includes(folder.name))) {
-			folders[order.indexOf(folder.name)] = folder
-		};
-
-		folders = folders.filter(arr => !!arr);
-	}
-
-	if (conf.listNSZ) {
-		const nszFolder = res_folders[res_folders.map(e => e.name).indexOf('NSZ')];
-
-		if (nszFolder) {
-			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${nszFolder.id}\' in parents`;
-		
-			const res_nsz = (await retrieveAllFiles(folderOptions).catch(console.error)).filter(folder => order_nsz.includes(folder.name));
-		
-			for (const folder of res_nsz) {
-				folders_nsz[order_nsz.indexOf(folder.name)] = folder
-			};
-	
-			folders_nsz = folders_nsz.filter(arr => arr !== null);
-	
-			await goThroughFolders(driveId, folders_nsz, ['base', 'dlc', 'updates']);
-		} else {
-			console.error('No NSZ Folder found');
-		}
-	}
-
-	if (conf.listXCI) {
-		await goThroughFolders(driveId, folders, ['XCI Trimmed']);
-	}
-
-	if (conf.listCustomXCI) {
-		const customXCIFolder = folders[folders.map(e => e.name).indexOf('Custom XCI')];
-
-		if (customXCIFolder) {
-			folderOptions.q = `mimeType = \'application/vnd.google-apps.folder\' and trashed = false and \'${customXCIFolder.id}\' in parents`;
-
-			const temp = await retrieveAllFiles(folderOptions).catch(console.error);
-		
-			const res_xci = folders.concat(temp).filter(folder => order.includes(folder.name));
-		
-			for (const folder of res_xci) {
-				folders[order.indexOf(folder.name)] = folder
-			};
-
-			folders = folders.filter(arr => !!arr);
-		
-			await goThroughFolders(driveId, folders, ['Custom XCI', 'Custom XCI JP', 'Special Collection']);
-		} else {
-			console.error('No Custom XCI folder found');
-		}
-	}
+	await addToFile(rootfolder ? rootfolder : driveId, driveId);
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
 	if (!fs.existsSync('shop/')) fs.mkdirSync('shop/');
@@ -325,30 +240,14 @@ async function listDriveFiles(driveId = null) {
 	}
 }
 
-function goThroughFolders(driveId, folders, includeIndex) {
+async function addToFile(folderId, driveId = null) {
 	return new Promise(async (resolve, reject) => {
-		if (!folders) reject('Missing parameter folder');
-
-		for (const folder of folders) {
-			if (!includeIndex.includes(folder.name)) continue;
-	
-			debugMessage(folder.name);
-
-			await addToFile(folder, driveId);
-		}
-		resolve();
-	});
-}
-
-async function addToFile(folder, driveId = null) {
-	return new Promise(async (resolve, reject) => {
-		if (!folder) reject('No folder given');
+		if (!folderId) reject('No folder id given');
 
 		const options = {
 			fields: 'nextPageToken, files(id, name, size, permissionIds)',
 			orderBy: 'name',
-			pageSize: 1000,
-			q: `\'${folder.id}\' in parents and trashed = false and not mimeType = \'application/vnd.google-apps.folder\'`
+			pageSize: 1000
 		};
 	
 		if (driveId) {
@@ -360,17 +259,24 @@ async function addToFile(folder, driveId = null) {
 			options.corpora = 'user';
 		}
 	
-		files = await retrieveAllFiles(options).catch(console.error);
+		files = await retrieveAll(folderId, options).catch(console.error);
 	
 		if (files.length) {
-			debugMessage(`Files in ${folder.name}:`);
+			debugMessage(`Files in ${folderId}:`);
 
 			for (const file of files) {
 				debugMessage(`${file.name} (${file.id})`);
 
 				const extension = path.extname(file.name);
-				if (!['.nsp', '.nsz', '.xci'].includes(extension)) continue;
-				
+
+				const enabledExtension = [];
+
+				if (conf.listNSP) enabledExtension.push('.nsp');
+				if (conf.listNSZ) enabledExtension.push('.nsz');
+				if (conf.listXCI) enabledExtension.push('.xci');
+
+				if (!enabledExtension.includes(extension)) continue;
+
 				const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
 				let gamename = file.name;
 				
@@ -496,15 +402,26 @@ async function doUpload(driveId = null) {
 	});
 }
 
-function retrieveAllFiles(options) {
+function retrieveAll(folderId, options) {
 	return new Promise(async (resolve, reject) => {
-		const result = await retrievePageOfFiles(options, []).catch(console.error);
-	
-		resolve(result);
+		options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
+		const result = await retrieveAllFolders(options, []).catch(console.error);
+
+		let response = [];
+			
+		for (const folder of result) {
+			debugMessage(`Getting files from ${folder.id}`);
+			options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
+			delete options.pageToken;
+			const resp = await retrieveAllFiles(options, []).catch(console.error);
+			response = response.concat(resp);
+		}
+
+		resolve(response);
 	});
 }
 
-function retrievePageOfFiles(options, result) {
+function retrieveAllFolders(options, result) {
 	return new Promise(async (resolve, reject) => {
 		const resp = await driveAPI.files.list(options).catch(console.error);
 	
@@ -514,6 +431,34 @@ function retrievePageOfFiles(options, result) {
 			options.pageToken = resp.data.nextPageToken;
 	
 			const res = await retrievePageOfFiles(options, result).catch(console.error);
+			resolve(res);
+		} else {
+			let response = [];
+			
+			for (const folder of result) {
+				options.q = `\'${folder.id}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
+				delete options.pageToken;
+				const resp = await retrieveAllFolders(options, []).catch(console.error);
+				response = response.concat(resp);
+			}
+
+			response = response.concat(result);
+
+			resolve(response);
+		}
+	});
+}
+
+function retrieveAllFiles(options, result) {
+	return new Promise(async (resolve, reject) => {
+		const resp = await driveAPI.files.list(options).catch(console.error);
+	
+		result = result.concat(resp.data.files);
+	
+		if (resp.data.nextPageToken) {
+			options.pageToken = resp.data.nextPageToken;
+	
+			const res = await retrieveAllFiles(options, result).catch(console.error);
 			resolve(res);
 		} else {
 			resolve(result);
@@ -531,6 +476,38 @@ function encrypt() {
 		python.stderr.pipe(process.stderr);
 
 		python.on('exit', () => {
+			resolve();
+		});
+	});
+}
+
+async function checkCommit() {
+	return;
+
+	if (!conf.lastCommit) {
+		await getNewTitleDB();
+	} else {
+		const currentCommit = JSON.parse(await http.get('https://api.github.com/repos/blawar/titledb/commits/master')).sha;
+
+		if (currentCommit !== conf.lastCommit) {
+			await getNewTitleDB();
+		}
+	}
+}
+
+async function getNewTitleDB() {
+	const res = await fetch('https://github.com/blawar/titledb/archive/master.zip');
+	await new Promise((resolve, reject) => {
+		const fileStream = fs.createWriteStream('./temp.0');
+		res.body.pipe(fileStream);
+		
+		fileStream.on("finish", () => {
+			const admzip = require('adm-zip');
+			const zip = new admzip('./temp.0');
+			zip.extractAllTo("./titledb/", true);
+		
+			fs.unlinkSync('./temp.0');
+			
 			resolve();
 		});
 	});
