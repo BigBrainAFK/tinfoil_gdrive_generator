@@ -1,6 +1,6 @@
 # Tinfoil index.json generator
 
-This is a small node.js script that will allow you to easily generate an index.json for use with Tinfoil.
+This is a small node.js script that will allow you to easily generate an index.html for use with Tinfoil.
 
 
 # Installation
