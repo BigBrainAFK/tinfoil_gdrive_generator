@@ -56,9 +56,10 @@ let driveAPI;
 let selectedDrive;
 
 const outFilename = 'index.json';
+const finalFilename = 'index.html';
 
 const outputPath = path.join('output', outFilename);
-const encPath = path.join('shop', outFilename);
+const encPath = path.join('shop', finalFilename);
 
 const fileListJson = {
 	files: [],
@@ -137,18 +138,16 @@ function getAccessToken(oAuth2Client, callback) {
 }
 
 async function choice() {
-	const resp = await driveAPI.drives.list({
-		fields: 'drives(id, name)'
-	}).catch(console.error);
-
-	const result = resp.data.drives;
+	const drives = await retrieveAllDrives({
+		fields: 'nextPageToken, drives(id, name)'
+	});
 	let x = 1;
 
 	let chosen = flags.choice || null;
 	const chosenIsNaN = isNaN(Number(chosen));
 
 	if (chosenIsNaN && chosen !== null) {
-		const foundIndex = result.findIndex(e => e.id === chosen);
+		const foundIndex = drives.findIndex(e => e.id === chosen);
 
 		if (foundIndex < 0) chosen = null;
 		else chosen = foundIndex + 2;
@@ -158,7 +157,7 @@ async function choice() {
 
 	if (!chosen && !flags.auto) {
 		console.log('1: Your own drive');
-		for (const gdrive of result) {
+		for (const gdrive of drives) {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
@@ -167,14 +166,14 @@ async function choice() {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
 	} else {
-		x += result.length;
+		x += drives.length;
 	}
 
 	if (chosen === 1) {
 		listDriveFiles();
 	} else if (chosen <= x && chosen > 1) {
-		selectedDrive = `${result[chosen - 2].name} (${result[chosen - 2].id})`;
-		listDriveFiles(result[chosen - 2].id);
+		selectedDrive = `${drives[chosen - 2].name} (${drives[chosen - 2].id})`;
+		listDriveFiles(drives[chosen - 2].id);
 	} else {
 		if (flags.choice) flags.choice = null;
 		choice();
@@ -327,7 +326,7 @@ async function addToFile(folderId, driveId = null) {
 async function writeToDrive(driveId = null) {
 	let answer = flags.upload;
 	
-	if (!answer && !flags.auto) answer = await question('Do you want to upload the HTML to your google drive? [y/n]: ');
+	if (!answer && !flags.auto) answer = await question('Do you want to upload the file to your google drive? [y/n]: ');
 	if (!answer && flags.auto) {
 		debugMessage('Invalid upload argument. Assuming to not upload the file.')
 	}
@@ -405,7 +404,7 @@ async function doUpload(driveId = null) {
 function retrieveAll(folderId, options) {
 	return new Promise(async (resolve, reject) => {
 		options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
-		const result = await retrieveAllFolders(options, []).catch(console.error);
+		const result = await retrieveAllFolders(options).catch(console.error);
 
 		let response = [];
 			
@@ -413,7 +412,7 @@ function retrieveAll(folderId, options) {
 			debugMessage(`Getting files from ${folder.id}`);
 			options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
 			delete options.pageToken;
-			const resp = await retrieveAllFiles(options, []).catch(console.error);
+			const resp = await retrieveAllFiles(options).catch(console.error);
 			response = response.concat(resp);
 		}
 
@@ -421,7 +420,7 @@ function retrieveAll(folderId, options) {
 	});
 }
 
-function retrieveAllFolders(options, result) {
+function retrieveAllFolders(options, result = []) {
 	return new Promise(async (resolve, reject) => {
 		const resp = await driveAPI.files.list(options).catch(console.error);
 	
@@ -438,7 +437,7 @@ function retrieveAllFolders(options, result) {
 			for (const folder of result) {
 				options.q = `\'${folder.id}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
 				delete options.pageToken;
-				const resp = await retrieveAllFolders(options, []).catch(console.error);
+				const resp = await retrieveAllFolders(options).catch(console.error);
 				response = response.concat(resp);
 			}
 
@@ -449,7 +448,7 @@ function retrieveAllFolders(options, result) {
 	});
 }
 
-function retrieveAllFiles(options, result) {
+function retrieveAllFiles(options, result = []) {
 	return new Promise(async (resolve, reject) => {
 		const resp = await driveAPI.files.list(options).catch(console.error);
 	
@@ -466,16 +465,34 @@ function retrieveAllFiles(options, result) {
 	});
 }
 
+
+function retrieveAllDrives(options, result = []) {
+	return new Promise(async (resolve, reject) => {
+		const resp = await driveAPI.drives.list(options).catch(console.error);
+	
+		result = result.concat(resp.data.drives);
+
+		if (resp.data.nextPageToken) {
+			options.pageToken = resp.data.nextPageToken;
+	
+			const res = await retrieveAllDrives(options, result).catch(console.error);
+			resolve(res);
+		} else {
+			resolve(result);
+		}
+	});
+}
+
 function encrypt() {
 	return new Promise((resolve, reject) => {
 		console.log(outputPath);
 		console.log(encPath);
-		const python = require('child_process').spawn('python3', ['encrypt.py', outputPath, encPath]);
+		const encrypter = require('child_process').spawn('node', ['encrypt.js', outputPath, encPath]);
 
-		python.stdout.pipe(process.stdout);
-		python.stderr.pipe(process.stderr);
+		encrypter.stdout.pipe(process.stdout);
+		encrypter.stderr.pipe(process.stderr);
 
-		python.on('exit', () => {
+		encrypter.on('exit', () => {
 			resolve();
 		});
 	});

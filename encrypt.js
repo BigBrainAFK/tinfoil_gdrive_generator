@@ -1,4 +1,3 @@
-const rsa = require('node-rsa');
 const fs = require('fs');
 const crypto = require('crypto');
 const zlib = require('zlib');
@@ -11,29 +10,32 @@ function ReverseEndian(input) {
 }
 
 function wrapKey(key) {
-    const pubKey = new rsa(fs.readFileSync('./public.key'));
-    return pubKey.encrypt(key)
+    return crypto.publicEncrypt({
+        key: fs.readFileSync('./public.key'),
+        oaepHash: 'sha256',
+        oaepLabel: Buffer.from('')
+    }, key);
 }
 
 aesKey = crypto.randomBytes(16);
 
-const file = fs.readFileSync('./output/index.json');
+const file = fs.readFileSync(process.argv[2]);
 
 const cipher = new aesjs.ModeOfOperation.ecb(aesKey);
-let buf = zlib.deflateRawSync(file, {level: 9});
+let buf = zlib.deflateSync(file, {level: 9});
 const sz = buf.length;
 buf = Buffer.from(cipher.encrypt(Buffer.concat([buf, Buffer.from('00'.repeat(0x10 - (sz % 0x10)), 'hex')])));
 
-console.log(buf)
+console.log(aesKey.toString('hex'));
 
-console.log(aesKey);
-
-const streamWriter = fs.createWriteStream('./shop/test.json');
+const streamWriter = fs.createWriteStream(process.argv[3]);
 
 with (streamWriter) {
     write(Buffer.concat([Buffer.from('TINFOIL'), Buffer.from('FE', 'hex')]));
     write(wrapKey(aesKey));
-    write(ReverseEndian(sz).toString(16));
+    write(Buffer.from(ReverseEndian(sz).toString(16), 'hex'));
     write(buf);
     close();
 }
+
+console.log('fin');

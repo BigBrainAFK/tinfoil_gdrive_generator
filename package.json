@@ -3,6 +3,9 @@
 	"description": "Builds a HTML file for usage in Tinfoil",
 	"version": "1.0.0",
 	"main": "index.js",
+	"engines": {
+		"node": ">=13.7.0"
+	},
 	"scripts": {
 		"start": "node index.js"
 	},
@@ -24,9 +27,8 @@
 	"dependencies": {
 		"adm-zip": "^0.4.14",
 		"aes-js": "^3.1.2",
-		"googleapis": "^44.0.0",
+		"googleapis": "^47.0.0",
 		"moment": "^2.24.0",
-		"node-fetch": "^2.6.0",
-		"node-rsa": "^1.0.7"
+		"node-fetch": "^2.6.0"
 	}
 }
