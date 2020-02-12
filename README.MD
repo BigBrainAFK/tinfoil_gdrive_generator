@@ -6,8 +6,7 @@ This is a small node.js script that will allow you to easily generate an index.j
 # Installation
 
 ## Requirements
-- [Python 3.X](https://www.python.org/downloads/) (I will implement the encryption in NodeJS at some point)
-- [NodeJS](https://nodejs.org/en/) (v12.X preferably even newer)
+- [NodeJS](https://nodejs.org/en/) (v13.7.X or newer)
 - [YarnPKG](https://yarnpkg.com/lang/en/)
 - A credentials file of the Google account with access to your stash (Get one [here](https://developers.google.com/drive/api/v3/quickstart/nodejs))
 - A few brain cells
@@ -17,7 +16,6 @@ This is a small node.js script that will allow you to easily generate an index.j
 1. Open a command prompt
 2. Navigate to the folder containing the generator
 3. Run `yarn install`
-4. Run `pip3 install Crypto`
 
 # Usage
 
