@@ -36,6 +36,7 @@ const { google } = require('googleapis');
 const moment = require('moment');
 const path = require('path');
 const fetch = require('node-fetch');
+const cliProgress = require('cli-progress');
 
 let conf = {};
 
@@ -60,6 +61,14 @@ const finalFilename = 'index.html';
 
 const outputPath = path.join('output', outFilename);
 const encPath = path.join('shop', finalFilename);
+
+const progBar = new cliProgress.SingleBar({
+	format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files'
+}, cliProgress.Presets.shades_classic);
+
+const folderBar = new cliProgress.SingleBar({
+	format: 'Getting folders: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} folders'
+}, cliProgress.Presets.shades_classic);
 
 const fileListJson = {
 	files: [],
@@ -218,7 +227,7 @@ async function listDriveFiles(driveId = null) {
 
 	await encrypt();
 
-	console.log('Generation of JSON completed.');
+	console.log('Generation of HTML completed.');
 	console.log(`Took: ${moment.utc(moment().diff(startTime)).format('HH:mm:ss.SSS')}`);
 
 	if (driveId) {
@@ -261,7 +270,7 @@ async function addToFile(folderId, driveId = null) {
 		files = await retrieveAll(folderId, options).catch(console.error);
 	
 		if (files.length) {
-			debugMessage(`Files in ${folderId}:`);
+			progBar.start(files.length, 0);
 
 			for (const file of files) {
 				debugMessage(`${file.name} (${file.id})`);
@@ -315,10 +324,12 @@ async function addToFile(folderId, driveId = null) {
 				}
 
 				fileListJson.files.push(jsonFile);
+				progBar.increment();
 			};
 		} else {
 			console.log('No files found.');
 		}
+		progBar.stop();
 		resolve();
 	});
 }
@@ -407,14 +418,19 @@ function retrieveAll(folderId, options) {
 		const result = await retrieveAllFolders(options).catch(console.error);
 
 		let response = [];
-			
+		
+		folderBar.start(result.length, 0);
+
 		for (const folder of result) {
 			debugMessage(`Getting files from ${folder.id}`);
 			options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
 			delete options.pageToken;
 			const resp = await retrieveAllFiles(options).catch(console.error);
 			response = response.concat(resp);
+			folderBar.increment();
 		}
+
+		folderBar.stop();
 
 		resolve(response);
 	});
@@ -429,11 +445,10 @@ function retrieveAllFolders(options, result = []) {
 		if (resp.data.nextPageToken) {
 			options.pageToken = resp.data.nextPageToken;
 	
-			const res = await retrievePageOfFiles(options, result).catch(console.error);
+			const res = await retrieveAllFolders(options, result).catch(console.error);
 			resolve(res);
 		} else {
 			let response = [];
-			
 			for (const folder of result) {
 				options.q = `\'${folder.id}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
 				delete options.pageToken;
@@ -485,8 +500,6 @@ function retrieveAllDrives(options, result = []) {
 
 function encrypt() {
 	return new Promise((resolve, reject) => {
-		console.log(outputPath);
-		console.log(encPath);
 		const encrypter = require('child_process').spawn('node', ['encrypt.js', outputPath, encPath]);
 
 		encrypter.stdout.pipe(process.stdout);

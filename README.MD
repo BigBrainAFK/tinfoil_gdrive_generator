@@ -52,7 +52,7 @@ Now that we established the flags lets see some examples:
 
 `node index.js -auto -source SHARED_DRIVE_ID`
 
-This will look for folders called `NSP Dump`, `NSZ`, `XCI Trimmed`, `Custom XCI` in the provided shared drive's root directory. (You can configure what types of files it will look for using the `config.json`)
+This will get all files in all folders in the provided shared drive's root directory and sort them by what extensions you enabled in the config. (You can configure what types of files it will look for using the `config.json`)
 
 `node index.js -auto -source SHARED_DRIVE_ID -root FOLDER_ID`
 

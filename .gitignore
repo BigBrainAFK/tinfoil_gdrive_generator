@@ -1,6 +1,7 @@
 output/
 shop/
 node_modules/
+titledb/
 
 credentials.json
 token.json
