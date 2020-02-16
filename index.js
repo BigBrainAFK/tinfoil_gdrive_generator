@@ -149,7 +149,7 @@ function getAccessToken(oAuth2Client, callback) {
 async function choice() {
 	const drives = await retrieveAllDrives({
 		fields: 'nextPageToken, drives(id, name)'
-	});
+	}).catch(console.error);
 	let x = 1;
 
 	let chosen = flags.choice || null;
@@ -170,7 +170,7 @@ async function choice() {
 			console.log(`${++x}: ${gdrive.name} (${gdrive.id})`);
 		}
 	
-		chosen = Number(await question('Enter your choice: '));
+		chosen = Number(await question('Enter your choice: ').catch(console.error));
 	} else if (!chosen && flags.auto) {
 		console.error('Source argument invalid. Aborting auto.');
 		process.exit(1);
@@ -204,7 +204,7 @@ async function listDriveFiles(driveId = null) {
 
 	let rootfolder = flags.root;
 
-	if (!rootfolder && !flags.auto) rootfolder = await question('Whats the root folder id: ');
+	if (!rootfolder && !flags.auto) rootfolder = await question('Whats the root folder id: ').catch(console.error);
 	if (!rootfolder && flags.auto) {
 		debugMessage('Invalid root argument. Assuming shared drive as root.');
 	}
@@ -218,14 +218,14 @@ async function listDriveFiles(driveId = null) {
 		folderOptions.corpora = 'user';
 	}
 		
-	await addToFile(rootfolder ? rootfolder : driveId, driveId);
+	await addToFile(rootfolder ? rootfolder : driveId, driveId).catch(console.error);
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
 	if (!fs.existsSync('shop/')) fs.mkdirSync('shop/');
 
 	fs.writeFileSync(outputPath, JSON.stringify(fileListJson, null, '\t'));
 
-	await encrypt();
+	await encrypt().catch(console.error);
 
 	console.log('Generation of HTML completed.');
 	console.log(`Took: ${moment.utc(moment().diff(startTime)).format('HH:mm:ss.SSS')}`);
@@ -233,7 +233,7 @@ async function listDriveFiles(driveId = null) {
 	if (driveId) {
 		let driveAnswer = flags.uploadDrive;
 		
-		if (!driveAnswer && !flags.auto) driveAnswer = await question(`Write to ${selectedDrive}? [y/n]:`);
+		if (!driveAnswer && !flags.auto) driveAnswer = await question(`Write to ${selectedDrive}? [y/n]:`).catch(console.error);
 		if (!driveAnswer && flags.auto) {
 			debugMessage('Invalid uploadDrive argument. Assuming no upload to shared drive.');
 			writeToDrive();
@@ -267,7 +267,7 @@ async function addToFile(folderId, driveId = null) {
 			options.corpora = 'user';
 		}
 	
-		files = await retrieveAll(folderId, options).catch(console.error);
+		files = await retrieveAll(folderId, options).catch(reject);
 	
 		if (files.length) {
 			progBar.start(files.length, 0);
@@ -315,7 +315,7 @@ async function addToFile(folderId, driveId = null) {
 						permissionRequest.corpora = 'user';
 					}
 
-					await driveAPI.permissions.create(permissionRequest).catch(console.error);
+					await driveAPI.permissions.create(permissionRequest).catch(reject);
 					debugMessage('Created perms');
 				} else if (!flags.auth) {
 					debugMessage('Automatig authing disabled. Won\'t set permissions.')
@@ -337,13 +337,13 @@ async function addToFile(folderId, driveId = null) {
 async function writeToDrive(driveId = null) {
 	let answer = flags.upload;
 	
-	if (!answer && !flags.auto) answer = await question('Do you want to upload the file to your google drive? [y/n]: ');
+	if (!answer && !flags.auto) answer = await question('Do you want to upload the file to your google drive? [y/n]: ').catch(console.error);
 	if (!answer && flags.auto) {
-		debugMessage('Invalid upload argument. Assuming to not upload the file.')
+		debugMessage('Invalid upload argument. Assuming to not upload the file.');
 	}
 
 	if (answer === 'y') {
-		await doUpload(driveId)
+		await doUpload(driveId).catch(console.error);
 	}
 
 	if (!flags.auto) {
@@ -383,7 +383,7 @@ async function doUpload(driveId = null) {
 			requestData.resource = fileMetadata;
 			requestData.fileId = conf.indexFileId;
 	
-			await driveAPI.files.update(requestData).catch(console.error);	  
+			await driveAPI.files.update(requestData).catch(reject);	  
 		} else {
 			console.log(`Creating the ${outFilename} on the drive...`);
 	
@@ -400,7 +400,7 @@ async function doUpload(driveId = null) {
 			requestData.resource = fileMetadata;
 			requestData.fields = 'id';
 
-			const file = await driveAPI.files.create(requestData).catch(console.error);
+			const file = await driveAPI.files.create(requestData).catch(reject);
 	
 			conf.indexFileId = file.data.id;
 	
@@ -415,7 +415,7 @@ async function doUpload(driveId = null) {
 function retrieveAll(folderId, options) {
 	return new Promise(async (resolve, reject) => {
 		options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
-		const result = await retrieveAllFolders(options).catch(console.error);
+		const result = await retrieveAllFolders(options).catch(reject);
 
 		let response = [];
 		
@@ -425,7 +425,7 @@ function retrieveAll(folderId, options) {
 			debugMessage(`Getting files from ${folder.id}`);
 			options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
 			delete options.pageToken;
-			const resp = await retrieveAllFiles(options).catch(console.error);
+			const resp = await retrieveAllFiles(options).catch(reject);
 			response = response.concat(resp);
 			folderBar.increment();
 		}
@@ -438,21 +438,21 @@ function retrieveAll(folderId, options) {
 
 function retrieveAllFolders(options, result = []) {
 	return new Promise(async (resolve, reject) => {
-		const resp = await driveAPI.files.list(options).catch(console.error);
+		const resp = await driveAPI.files.list(options).catch(reject);
 	
 		result = result.concat(resp.data.files);
 	
 		if (resp.data.nextPageToken) {
 			options.pageToken = resp.data.nextPageToken;
 	
-			const res = await retrieveAllFolders(options, result).catch(console.error);
+			const res = await retrieveAllFolders(options, result).catch(reject);
 			resolve(res);
 		} else {
 			let response = [];
 			for (const folder of result) {
 				options.q = `\'${folder.id}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
 				delete options.pageToken;
-				const resp = await retrieveAllFolders(options).catch(console.error);
+				const resp = await retrieveAllFolders(options).catch(reject);
 				response = response.concat(resp);
 			}
 
@@ -465,14 +465,14 @@ function retrieveAllFolders(options, result = []) {
 
 function retrieveAllFiles(options, result = []) {
 	return new Promise(async (resolve, reject) => {
-		const resp = await driveAPI.files.list(options).catch(console.error);
+		const resp = await driveAPI.files.list(options).catch(reject);
 	
 		result = result.concat(resp.data.files);
 	
 		if (resp.data.nextPageToken) {
 			options.pageToken = resp.data.nextPageToken;
 	
-			const res = await retrieveAllFiles(options, result).catch(console.error);
+			const res = await retrieveAllFiles(options, result).catch(reject);
 			resolve(res);
 		} else {
 			resolve(result);
@@ -483,14 +483,14 @@ function retrieveAllFiles(options, result = []) {
 
 function retrieveAllDrives(options, result = []) {
 	return new Promise(async (resolve, reject) => {
-		const resp = await driveAPI.drives.list(options).catch(console.error);
+		const resp = await driveAPI.drives.list(options).catch(reject);
 	
 		result = result.concat(resp.data.drives);
 
 		if (resp.data.nextPageToken) {
 			options.pageToken = resp.data.nextPageToken;
 	
-			const res = await retrieveAllDrives(options, result).catch(console.error);
+			const res = await retrieveAllDrives(options, result).catch(reject);
 			resolve(res);
 		} else {
 			resolve(result);
@@ -515,18 +515,18 @@ async function checkCommit() {
 	return;
 
 	if (!conf.lastCommit) {
-		await getNewTitleDB();
+		await getNewTitleDB().catch(console.error);
 	} else {
-		const currentCommit = JSON.parse(await http.get('https://api.github.com/repos/blawar/titledb/commits/master')).sha;
+		const currentCommit = JSON.parse(await http.get('https://api.github.com/repos/blawar/titledb/commits/master').catch(console.error)).sha;
 
 		if (currentCommit !== conf.lastCommit) {
-			await getNewTitleDB();
+			await getNewTitleDB().catch(console.error);
 		}
 	}
 }
 
 async function getNewTitleDB() {
-	const res = await fetch('https://github.com/blawar/titledb/archive/master.zip');
+	const res = await fetch('https://github.com/blawar/titledb/archive/master.zip').catch(console.error);
 	await new Promise((resolve, reject) => {
 		const fileStream = fs.createWriteStream('./temp.0');
 		res.body.pipe(fileStream);
