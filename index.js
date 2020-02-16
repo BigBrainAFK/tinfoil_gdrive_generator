@@ -86,6 +86,8 @@ fs.readFile('credentials.json', (err, content) => {
 	checkCommit().then(() => authorize(JSON.parse(content), choice));
 });
 
+const locationsConf = JSON.parse('["sdmc:/","usb:/","usbfs:/",{"url":"https://hbgshop.ga/ng","priority":20,"enabled":0},{"url":"https://thehbg.shop/","priority":20,"enabled":0},{"url":"https://thehbg.shop/lang","enabled":0}]');
+
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
@@ -293,7 +295,7 @@ async function addToFile(folderId, driveId = null) {
 				}
 
 				const jsonFile = {
-					url: `gdrive:/${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
+					url: `gdrive:${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
 					size: Number(file.size)
 				}
 
@@ -378,16 +380,16 @@ async function doUpload(driveId = null) {
 		}
 
 		if (conf.indexFileId) {	
-			console.log(`Updating the ${outFilename} on the drive...`);
+			console.log(`Updating the ${finalFilename} on the drive...`);
 
 			requestData.resource = fileMetadata;
 			requestData.fileId = conf.indexFileId;
 	
 			await driveAPI.files.update(requestData).catch(reject);	  
 		} else {
-			console.log(`Creating the ${outFilename} on the drive...`);
+			console.log(`Creating the ${finalFilename} on the drive...`);
 	
-			fileMetadata.name = outFilename;
+			fileMetadata.name = finalFilename;
 	
 			if (driveId) {
 				if (flags.root) {
@@ -403,8 +405,11 @@ async function doUpload(driveId = null) {
 			const file = await driveAPI.files.create(requestData).catch(reject);
 	
 			conf.indexFileId = file.data.id;
+
+			locationsConf.push(`gdrive:${conf.indexFileId}`);
 	
 			fs.writeFileSync('conf.json', JSON.stringify(conf, null, '\t'));
+			fs.writeFileSync('locations.conf', JSON.stringify(locationsConf));
 		}
 	
 		console.log('Done!');

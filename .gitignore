@@ -9,3 +9,4 @@ token.json
 yarn.lock
 *.php
 *.old
+*.conf
