@@ -50,6 +50,7 @@ conf.listXCI = conf.listXCI || false;
 conf.listCustomXCI = conf.listCustomXCI || false;
 conf.indexFileId = conf.indexFileId || '';
 conf.lastCommit = conf.lastCommit || '';
+conf.motd = conf.motd || 'Loaded custom index';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
@@ -72,7 +73,7 @@ const folderBar = new cliProgress.SingleBar({
 
 const fileListJson = {
 	files: [],
-	success: 'Loaded custom index',
+	success: conf.motd,
 };
 
 const rl = readline.createInterface({
