@@ -423,6 +423,8 @@ function retrieveAll(folderId, options) {
 		options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
 		const result = await retrieveAllFolders(options).catch(reject);
 
+		result.push({id: folderId});
+
 		let response = [];
 		
 		folderBar.start(result.length, 0);
