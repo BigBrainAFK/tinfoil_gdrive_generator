@@ -213,12 +213,7 @@ async function listDriveFiles(driveId = null) {
 	}
 
 	if (driveId) {
-		folderOptions.driveId = driveId;
-		folderOptions.corpora = 'drive';
-		folderOptions.includeItemsFromAllDrives = true;
 		folderOptions.supportsAllDrives = true;
-	} else {
-		folderOptions.corpora = 'user';
 	}
 		
 	await addToFile(rootfolder ? rootfolder : driveId, driveId).catch(console.error);
