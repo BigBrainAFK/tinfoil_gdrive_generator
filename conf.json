@@ -7,7 +7,7 @@
 	"listXCI": true,
 	"_c4": "Currently not functioning",
 	"listCustomXCI": true,
-	"motd": "Message to display when index file successfully loads",
+	"motd": "Line1\nLine2\nLine3\nLine4",
 	"indexFileId": "",
 	"lastCommit": ""
 }

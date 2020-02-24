@@ -59,9 +59,11 @@ let selectedDrive;
 
 const outFilename = 'index.json';
 const finalFilename = 'index.html';
+const tflFilename = 'index.tfl';
 
 const outputPath = path.join('output', outFilename);
 const encPath = path.join('shop', finalFilename);
+const tflPath = path.join('shop', tflFilename);
 
 const progBar = new cliProgress.SingleBar({
 	format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files'
@@ -300,23 +302,32 @@ async function addToFile(folderId, driveId = null) {
 					size: Number(file.size)
 				}
 
+				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
+					const permsToDelete = file.permissionIds.filter(val => val.length > 20);
+
+					const permissionRequest = {
+						fileId: file.id,
+						supportsAllDrives: true
+					};
+
+					for (permId of permsToDelete) {
+						if (permId === 'anyoneWithLink') continue;
+						permissionRequest.permissionId = permId;
+
+						await driveAPI.permissions.delete(permissionRequest).catch(reject);
+						debugMessage(`Delete permId ${permId} from fileId ${file.id}`);
+					}
+				}
+
 				if (!file.permissionIds.includes('anyoneWithLink') && flags.auth) {
 					const permissionRequest = {
 						fileId: file.id,
 						requestBody: {
 						  role: 'reader',
 						  type: 'anyone',
-						}
+						},
+						supportsAllDrives: true
 					};
-		
-					if (driveId) {
-						permissionRequest.driveId = driveId;
-						permissionRequest.corpora = 'drive';
-						permissionRequest.includeItemsFromAllDrives = true;
-						permissionRequest.supportsAllDrives = true;
-					} else {
-						permissionRequest.corpora = 'user';
-					}
 
 					await driveAPI.permissions.create(permissionRequest).catch(reject);
 					debugMessage('Created perms');
@@ -514,6 +525,9 @@ function encrypt() {
 		encrypter.stderr.pipe(process.stderr);
 
 		encrypter.on('exit', () => {
+			if (fs.existsSync(encPath))
+				fs.copyFileSync(encPath, tflPath);
+
 			resolve();
 		});
 	});
