@@ -31,21 +31,31 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 ### Command-line flags
 
-|Flag|Required|Argument value|
-|--|--|--|
-|`-auth`|❌||
-|`-auto`|❌||
-|`-debug`|❌||
-|`-source`|❌|Number or Google Shared Drive ID|
-|`-root`|❌|Google Folder ID|
-|`-upload`|❌|Either `y` or `n`|
-|`-uploadDrive`|❌|Either `y` or `n`|
+|Flag|Required|Argument value|Description
+|--|--|--|--|
+|`-auth`|❌||Auth every file|
+|`-auto`|❌||Non-interactive mode|
+|`-debug`|❌||Print debug messages|
+|`-source`|❌|Number or Google Shared Drive ID|Specify source Drive|
+|`-upload`|❌|Either `y` or `n`|Upload file to Google Drive|
+|`-uploadDrive`|❌|Either `y` or `n`|Upload to source shared drive (if specified)|
+|`-oldFormat`|❌||Use `https:` url protocol instead of `gdrive:`|
+|`-makeTfl`|❌||Create a `.tfl` file along the `.html` file|
+|`-keepMissingId`|❌||Include files without title id in the name|
 
 #### Auth flag note
 The auth flag will set every file the script goes through to be accessible by anyone with the link.
 This is only for people who dont indent to give others direct access to the stash but only via the index file.
 The faster and more prefered way is to auth Tinfoil with GDrive by setting up the credentials of the right account in NUT.
 Then connect your Tinfoil to nut either via USB or Network. After that you can access the index file content even without sharing each file.
+
+#### oldFormat flag note
+The `https:` url format is rather unstable and thus not recommended to use.
+If you still insist on using it this is the flag you want to use.
+
+#### keepMissingId flag note
+Tinfoil will be dramatically slowed down by files without title ids in them.
+If you still want access to those files you can use this flag to still include them.
 
 ### Examples of automation
 Now that we established the flags lets see some examples:
@@ -54,7 +64,7 @@ Now that we established the flags lets see some examples:
 
 This will get all files in all folders in the provided shared drive's root directory and sort them by what extensions you enabled in the config. (You can configure what types of files it will look for using the `config.json`)
 
-`node index.js -auto -source SHARED_DRIVE_ID -root FOLDER_ID`
+`node index.js -auto -source SHARED_DRIVE_ID FOLDER_ID`
 
 This will do almost the same as not providing a folder id. The only difference being that it will look for the folders in the provided folder instead of the shared drive's root directory.
 

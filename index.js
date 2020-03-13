@@ -6,9 +6,11 @@ flags.auto = getArgument('auto', true, false);
 flags.auth = getArgument('auth', true, false);
 flags.debug = getArgument('debug', true, false);
 flags.choice = getArgument('source', false);
-flags.root = getArgument('root', false);
 flags.upload = getArgument('upload', false);
 flags.uploadDrive = getArgument('uploadDrive', false);
+flags.oldFormat = getArgument('oldFormat', true, false);
+flags.makeTfl = getArgument('makeTfl', true, false);
+flags.keepMissingId = getArgument('keepMissingId', true, false);
 
 function getArgument(name, isFlag, defaultValue = null) {
 	if (progArgs.includes(`-${name}`)) {
@@ -21,6 +23,8 @@ function getArgument(name, isFlag, defaultValue = null) {
 	}
 	return defaultValue;
 }
+
+const rootfolders = progArgs;
 
 function question(question) {
 	return new Promise((resolve, reject) => {
@@ -207,10 +211,11 @@ async function listDriveFiles(driveId = null) {
 		orderBy: 'name'
 	};
 
-	let rootfolder = flags.root;
-
-	if (!rootfolder && !flags.auto) rootfolder = await question('Whats the root folder id: ').catch(console.error);
-	if (!rootfolder && flags.auto) {
+	if (!rootfolders.length && !flags.auto) {
+		const rId = await question('Whats the root folder id: ').catch(console.error);
+		rootfolders.push(rId);
+	}
+	if (!rootfolders.length && flags.auto) {
 		debugMessage('Invalid root argument. Assuming shared drive as root.');
 	}
 
@@ -223,7 +228,7 @@ async function listDriveFiles(driveId = null) {
 		folderOptions.corpora = 'user';
 	}
 		
-	await addToFile(rootfolder ? rootfolder : driveId, driveId).catch(console.error);
+	await addToFile(driveId, driveId).catch(console.error);
 
 	if (!fs.existsSync('output/')) fs.mkdirSync('output/');
 	if (!fs.existsSync('shop/')) fs.mkdirSync('shop/');
@@ -272,7 +277,7 @@ async function addToFile(folderId, driveId = null) {
 			options.corpora = 'user';
 		}
 	
-		files = await retrieveAll(folderId, options).catch(reject);
+		files = await retrieveAll(rootfolders, options).catch(reject);
 	
 		if (files.length) {
 			progBar.start(files.length, 0);
@@ -290,16 +295,27 @@ async function addToFile(folderId, driveId = null) {
 
 				if (!enabledExtension.includes(extension)) continue;
 
-				const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
-				let gamename = file.name;
-				
-				for (subStr of replace) {
-					gamename = gamename.replace(subStr, '');
+				if (!/\[[0-9A-F]{16}\]/.test(file.name) && !flags.keepMissingId) {
+					debugMessage(`Skipping ${file.name}(${file.id}) since the filename doesnt contain a title id`);
+					continue;
 				}
 
 				const jsonFile = {
-					url: `gdrive:${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
+					//url: `gdrive:${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
 					size: Number(file.size)
+				}
+
+				if (flags.oldFormat) {
+					const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
+					let gamename = file.name;
+					
+					for (subStr of replace) {
+						gamename = gamename.replace(subStr, '');
+					}
+
+					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`;
+				} else {
+					jsonFile.url = `gdrive:${file.id}`;
 				}
 
 				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
@@ -404,11 +420,7 @@ async function doUpload(driveId = null) {
 			fileMetadata.name = finalFilename;
 	
 			if (driveId) {
-				if (flags.root) {
-					fileMetadata.parents = [flags.root];
-				} else {
-					fileMetadata.parents = [driveId];
-				}
+				fileMetadata.parents = [driveId];
 			}
 	
 			requestData.resource = fileMetadata;
@@ -429,12 +441,16 @@ async function doUpload(driveId = null) {
 	});
 }
 
-function retrieveAll(folderId, options) {
+function retrieveAll(folderIds, options) {
 	return new Promise(async (resolve, reject) => {
-		options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
-		const result = await retrieveAllFolders(options).catch(reject);
+		const result = [];
 
-		result.push({id: folderId});
+		for (folderId of folderIds) {
+			options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
+			result.push(...await retrieveAllFolders(options).catch(reject));
+
+			result.push({id: folderId});
+		}
 
 		let response = [];
 		
@@ -525,7 +541,7 @@ function encrypt() {
 		encrypter.stderr.pipe(process.stderr);
 
 		encrypter.on('exit', () => {
-			if (fs.existsSync(encPath))
+			if (fs.existsSync(encPath) && flags.makeTfl)
 				fs.copyFileSync(encPath, tflPath);
 
 			resolve();
