@@ -300,22 +300,23 @@ async function addToFile(folderId, driveId = null) {
 					continue;
 				}
 
-				const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
-				let gamename = file.name;
-				
-				for (subStr of replace) {
-					gamename = gamename.replace(subStr, '');
-				}
-
 				const jsonFile = {
-					//url: `gdrive:${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`,
 					size: Number(file.size)
 				}
 
 				if (flags.oldFormat) {
+					const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
+					let gamename = file.name;
+					
+					for (subStr of replace) {
+						gamename = Buffer.from(gamename.replace(subStr, ''), 'utf8').toString('utf8');
+					}
+
 					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`;
 				} else {
-					jsonFile.url = `gdrive:${file.id}#${gamename}`;
+					const titleid = /(\[[0-9A-F]{16}\])/gi.exec(file.name)[0];
+
+					jsonFile.url = `gdrive:${file.id}#${titleid}${path.extname(file.name)}`;
 				}
 
 				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
