@@ -260,8 +260,6 @@ async function listDriveFiles(driveId = null) {
 
 async function addToFile(folderId, driveId = null) {
 	return new Promise(async (resolve, reject) => {
-		if (!folderId) reject('No folder id given');
-
 		const options = {
 			fields: 'nextPageToken, files(id, name, size, permissionIds)',
 			orderBy: 'name',
@@ -274,6 +272,7 @@ async function addToFile(folderId, driveId = null) {
 			options.includeItemsFromAllDrives = true;
 			options.supportsAllDrives = true;
 		} else {
+			options.spaces = 'drive';
 			options.corpora = 'user';
 		}
 	
@@ -446,11 +445,16 @@ function retrieveAll(folderIds, options) {
 	return new Promise(async (resolve, reject) => {
 		const result = [];
 
-		for (folderId of folderIds) {
-			options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
+		if (folderIds.length > 0) {
+			for (folderId of folderIds) {
+				options.q = `\'${folderId}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
+				result.push(...await retrieveAllFolders(options).catch(reject));
+	
+				result.push({id: folderId});
+			}
+		} else {
+			options.q = `trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
 			result.push(...await retrieveAllFolders(options).catch(reject));
-
-			result.push({id: folderId});
 		}
 
 		let response = [];
