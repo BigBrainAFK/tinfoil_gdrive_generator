@@ -315,7 +315,7 @@ async function addToFile(folderId, driveId = null) {
 				} else {
 					const titleid = /(\[[0-9A-F]{16}\])/gi.exec(file.name)[0];
 
-					jsonFile.url = `gdrive:${file.id}#${titleid}${path.extname(file.name)}`;
+					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
 				}
 
 				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
