@@ -4,7 +4,7 @@ node_modules/
 titledb/
 
 credentials.json
-token.json
+gdrive.token
 *.log
 yarn.lock
 *.php

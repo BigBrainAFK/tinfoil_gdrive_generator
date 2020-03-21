@@ -498,6 +498,9 @@ function retrieveAllFolders(options, result = []) {
 			const res = await retrieveAllFolders(options, result).catch(reject);
 			resolve(res);
 		} else {
+			resultMap = result.map(v => v.id);
+			result = result.filter((v,i) => resultMap.indexOf(v.id) === i);
+
 			let response = [];
 			for (const folder of result) {
 				options.q = `\'${folder.id}\' in parents and trashed = false and mimeType = \'application/vnd.google-apps.folder\'`;
@@ -507,6 +510,9 @@ function retrieveAllFolders(options, result = []) {
 			}
 
 			response = response.concat(result);
+
+			responseMap = response.map(v => v = v.id);
+			response = response.filter((v,i) => responseMap.indexOf(v.id) === i);
 
 			resolve(response);
 		}
