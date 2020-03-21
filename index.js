@@ -4,6 +4,7 @@ const progArgs = process.argv.slice(2);
 const flags = {};
 flags.auto = getArgument('auto', true, false);
 flags.auth = getArgument('auth', true, false);
+flags.deauth = getArgument('deauth', true, false);
 flags.debug = getArgument('debug', true, false);
 flags.choice = getArgument('source', false);
 flags.upload = getArgument('upload', false);
@@ -58,6 +59,7 @@ conf.motd = conf.motd || 'Loaded custom index';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'token.json';
+const TFTOKEN_PATH = 'gdrive.token';
 let driveAPI;
 let selectedDrive;
 
@@ -89,6 +91,8 @@ const rl = readline.createInterface({
 
 fs.readFile('credentials.json', (err, content) => {
 	if (err) return console.log('Error loading client secret file:', err);
+
+	if (fs.exists(TOKEN_PATH) && !fs.exists(TFTOKEN_PATH)) fs.copyFileSync(TOKEN_PATH, TFTOKEN_PATH);
 
 	checkCommit().then(() => authorize(JSON.parse(content), choice));
 });
@@ -144,6 +148,7 @@ function getAccessToken(oAuth2Client, callback) {
 				if (err) return console.error(err);
 				console.log('Token stored to', TOKEN_PATH);
 			});
+			fs.copyFileSync(TOKEN_PATH, TFTOKEN_PATH);
 
 			driveAPI = google.drive({
 				version: 'v3',
@@ -347,6 +352,15 @@ async function addToFile(folderId, driveId = null) {
 
 					await driveAPI.permissions.create(permissionRequest).catch(reject);
 					debugMessage('Created perms');
+				} else if (file.permissionIds.includes('anyoneWithLink') && flags.deauth) {
+					const permissionRequest = {
+						fileId: file.id,
+						permissionId: 'anyoneWithLink',
+						supportsAllDrives: true
+					};
+
+					await driveAPI.permissions.delete(permissionRequest).catch(reject);
+					debugMessage('Deleted perms');
 				} else if (!flags.auth) {
 					debugMessage('Automatig authing disabled. Won\'t set permissions.')
 				} else {
