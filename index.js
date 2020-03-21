@@ -58,8 +58,7 @@ conf.lastCommit = conf.lastCommit || '';
 conf.motd = conf.motd || 'Loaded custom index';
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
-const TOKEN_PATH = 'token.json';
-const TFTOKEN_PATH = 'gdrive.token';
+const TOKEN_PATH = 'gdrive.token';
 let driveAPI;
 let selectedDrive;
 
@@ -91,8 +90,6 @@ const rl = readline.createInterface({
 
 fs.readFile('credentials.json', (err, content) => {
 	if (err) return console.log('Error loading client secret file:', err);
-
-	if (fs.exists(TOKEN_PATH) && !fs.exists(TFTOKEN_PATH)) fs.copyFileSync(TOKEN_PATH, TFTOKEN_PATH);
 
 	checkCommit().then(() => authorize(JSON.parse(content), choice));
 });
@@ -148,7 +145,6 @@ function getAccessToken(oAuth2Client, callback) {
 				if (err) return console.error(err);
 				console.log('Token stored to', TOKEN_PATH);
 			});
-			fs.copyFileSync(TOKEN_PATH, TFTOKEN_PATH);
 
 			driveAPI = google.drive({
 				version: 'v3',
