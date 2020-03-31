@@ -28,7 +28,7 @@
 		"adm-zip": "^0.4.14",
 		"aes-js": "^3.1.2",
 		"cli-progress": "^3.6.0",
-		"googleapis": "^47.0.0",
+		"googleapis": "^48.0.0",
 		"moment": "^2.24.0",
 		"node-fetch": "^2.6.0"
 	}

@@ -42,6 +42,7 @@ const moment = require('moment');
 const path = require('path');
 const fetch = require('node-fetch');
 const cliProgress = require('cli-progress');
+const { Worker } = require('worker_threads');
 
 let conf = {};
 
@@ -467,22 +468,23 @@ function retrieveAll(folderIds, options) {
 			result.push(...await retrieveAllFolders(options).catch(reject));
 		}
 
-		let response = [];
+		let promises = [];
 		
-		folderBar.start(result.length, 0);
+		progBar.start(result.length, 0);
 
 		for (const folder of result) {
 			debugMessage(`Getting files from ${folder.id}`);
-			options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
-			delete options.pageToken;
-			const resp = await retrieveAllFiles(options).catch(reject);
-			response = response.concat(resp);
-			folderBar.increment();
+			promises.push(runFolderWorker({
+				folder,
+				options
+			}));
 		}
 
-		folderBar.stop();
+		const resp = await Promise.all(promises).catch(console.error);
 
-		resolve(response);
+		progBar.stop();
+
+		resolve([].concat.apply([], resp.filter(val => val.length > 0)));
 	});
 }
 
@@ -518,24 +520,6 @@ function retrieveAllFolders(options, result = []) {
 		}
 	});
 }
-
-function retrieveAllFiles(options, result = []) {
-	return new Promise(async (resolve, reject) => {
-		const resp = await driveAPI.files.list(options).catch(reject);
-	
-		result = result.concat(resp.data.files);
-	
-		if (resp.data.nextPageToken) {
-			options.pageToken = resp.data.nextPageToken;
-	
-			const res = await retrieveAllFiles(options, result).catch(reject);
-			resolve(res);
-		} else {
-			resolve(result);
-		}
-	});
-}
-
 
 function retrieveAllDrives(options, result = []) {
 	return new Promise(async (resolve, reject) => {
@@ -599,6 +583,21 @@ async function getNewTitleDB() {
 			
 			resolve();
 		});
+	});
+}
+
+function runFolderWorker(workerData) {
+	return new Promise((resolve, reject) => {
+		const worker = new Worker('./worker.js', { workerData });
+		worker.on('message', data => {
+			progBar.increment();
+			resolve(data);
+		});
+		worker.on('error', reject);
+		worker.on('exit', (code) => {
+		if (code !== 0)
+			reject(new Error(`Worker stopped with exit code ${code}`));
+		})
 	});
 }
 
