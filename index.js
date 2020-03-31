@@ -71,10 +71,6 @@ const outputPath = path.join('output', outFilename);
 const encPath = path.join('shop', finalFilename);
 const tflPath = path.join('shop', tflFilename);
 
-const progBar = new cliProgress.SingleBar({
-	format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files'
-}, cliProgress.Presets.shades_classic);
-
 const folderBar = new cliProgress.SingleBar({
 	format: 'Getting folders: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} folders'
 }, cliProgress.Presets.shades_classic);
@@ -279,6 +275,10 @@ async function addToFile(folderId, driveId = null) {
 		}
 	
 		files = await retrieveAll(rootfolders, options).catch(reject);
+		
+		const progBar = new cliProgress.SingleBar({
+			format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files'
+		}, cliProgress.Presets.shades_classic);
 	
 		if (files.length) {
 			progBar.start(files.length, 0);
@@ -470,7 +470,7 @@ function retrieveAll(folderIds, options) {
 
 		let promises = [];
 		
-		progBar.start(result.length, 0);
+		folderBar.start(result.length, 0);
 
 		for (const folder of result) {
 			debugMessage(`Getting files from ${folder.id}`);
@@ -482,7 +482,7 @@ function retrieveAll(folderIds, options) {
 
 		const resp = await Promise.all(promises).catch(console.error);
 
-		progBar.stop();
+		folderBar.stop();
 
 		resolve([].concat.apply([], resp.filter(val => val.length > 0)));
 	});
@@ -590,7 +590,7 @@ function runFolderWorker(workerData) {
 	return new Promise((resolve, reject) => {
 		const worker = new Worker('./worker.js', { workerData });
 		worker.on('message', data => {
-			progBar.increment();
+			folderBar.increment();
 			resolve(data);
 		});
 		worker.on('error', reject);
