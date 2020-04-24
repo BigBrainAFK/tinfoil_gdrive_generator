@@ -71,9 +71,20 @@ const outputPath = path.join('output', outFilename);
 const encPath = path.join('shop', finalFilename);
 const tflPath = path.join('shop', tflFilename);
 
-const folderBar = new cliProgress.SingleBar({
-	format: 'Getting folders: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} folders'
+const progBar = new cliProgress.SingleBar({
+	format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files',
+	etaBuffer: 100
 }, cliProgress.Presets.shades_classic);
+
+const folderBar = new cliProgress.SingleBar({
+	format: 'Getting folders: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} folders',
+	etaBuffer: 100
+}, cliProgress.Presets.shades_classic);
+
+setInterval(() => {
+	if (progBar.isActive) progBar.updateETA();
+	if (folderBar.isActive) folderBar.updateETA();
+}, 1000);
 
 const fileListJson = {
 	files: [],
@@ -275,10 +286,6 @@ async function addToFile(folderId, driveId = null) {
 		}
 	
 		files = await retrieveAll(rootfolders, options).catch(reject);
-		
-		const progBar = new cliProgress.SingleBar({
-			format: 'Adding files: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} files'
-		}, cliProgress.Presets.shades_classic);
 	
 		if (files.length) {
 			progBar.start(files.length, 0);
@@ -296,7 +303,7 @@ async function addToFile(folderId, driveId = null) {
 
 				if (!enabledExtension.includes(extension)) continue;
 
-				if (!/\[[0-9A-F]{16}\]/.test(file.name) && !flags.keepMissingId) {
+				if (!/\[[0-9A-Fa-f]{16}\]/.test(file.name) && !flags.keepMissingId) {
 					debugMessage(`Skipping ${file.name}(${file.id}) since the filename doesnt contain a title id`);
 					continue;
 				}
@@ -315,7 +322,7 @@ async function addToFile(folderId, driveId = null) {
 
 					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`;
 				} else {
-					const titleid = /(\[[0-9A-F]{16}\])/gi.exec(file.name)[0];
+					const titleid = /(\[[0-9A-Fa-f]{16}\])/gi.exec(file.name)[0];
 
 					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
 				}
