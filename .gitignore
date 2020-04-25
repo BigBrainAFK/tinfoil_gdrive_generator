@@ -3,8 +3,8 @@ shop/
 node_modules/
 titledb/
 
-credentials.json
-gdrive.token
+credentials*.json
+gdrive*.token
 *.log
 yarn.lock
 *.php

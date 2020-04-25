@@ -111,24 +111,50 @@ const locationsConf = JSON.parse('["sdmc:/","usb:/","usbfs:/",{"url":"https://hb
  * @param {function} callback The callback to call with the authorized client.
  */
 function authorize(credentials, callback) {
-	const {
-		client_secret,
-		client_id,
-		redirect_uris
-	} = credentials.installed;
-	const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+	if (credentials.type && credentials.type === "service_account") {
+		const {
+			client_email,
+			private_key
+		} = credentials;
 
-	fs.readFile(TOKEN_PATH, (err, token) => {
-		if (err) return getAccessToken(oAuth2Client, callback);
-		oAuth2Client.setCredentials(JSON.parse(token));
-
-		driveAPI = google.drive({
-			version: 'v3',
-			auth: oAuth2Client
+		const jwtClient = new google.auth.JWT(
+			client_email,
+			null,
+			private_key,
+			['https://www.googleapis.com/auth/drive']);
+	
+		fs.readFile(TOKEN_PATH, (err, token) => {
+			if (err) return getAccessTokenJWT(jwtClient, callback);
+			jwtClient.setCredentials(JSON.parse(token));
+	
+			driveAPI = google.drive({
+				version: 'v3',
+				auth: jwtClient
+			});
+	
+			callback();
 		});
+	} else {
+		const {
+			client_secret,
+			client_id,
+			redirect_uris
+		} = credentials.installed;
 
-		callback();
-	});
+		const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+	
+		fs.readFile(TOKEN_PATH, (err, token) => {
+			if (err) return getAccessToken(oAuth2Client, callback);
+			oAuth2Client.setCredentials(JSON.parse(token));
+	
+			driveAPI = google.drive({
+				version: 'v3',
+				auth: oAuth2Client
+			});
+	
+			callback();
+		});
+	}
 }
 
 /**
@@ -161,6 +187,31 @@ function getAccessToken(oAuth2Client, callback) {
 	
 			callback();
 		});
+	});
+}
+
+/**
+ * Get and store new token after prompting for user authorization, and then
+ * execute the given callback with the authorized OAuth2 client.
+ * @param {google.auth.JWT} jwtClient The OAuth2 client to get token for.
+ * @param {getEventsCallback} callback The callback for the authorized client.
+ */
+function getAccessTokenJWT(jwtClient, callback) {
+	jwtClient.authorize(function (err, tokens) {
+		if (err) return console.error(err);
+		
+		jwtClient.setCredentials(tokens);
+		fs.writeFile(TOKEN_PATH, JSON.stringify(tokens), (err) => {
+			if (err) return console.error(err);
+			console.log('Token stored to', TOKEN_PATH);
+		});
+
+		driveAPI = google.drive({
+			version: 'v3',
+			auth: jwtClient
+		});
+
+		callback();
 	});
 }
 

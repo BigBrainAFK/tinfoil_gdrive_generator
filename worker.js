@@ -7,21 +7,54 @@ const TOKEN_PATH = 'gdrive.token';
 
 const credentials = JSON.parse(fs.readFileSync('credentials.json'));
 
-const {
-	client_secret,
-	client_id,
-	redirect_uris
-} = credentials.installed;
-const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
 const token = fs.readFileSync(TOKEN_PATH);
 
-oAuth2Client.setCredentials(JSON.parse(token));
+let driveAPI;
 
-const driveAPI = google.drive({
-	version: 'v3',
-	auth: oAuth2Client
-});
+if (credentials.type && credentials.type === "service_account") {
+	const {
+		client_email,
+		private_key
+	} = credentials;
+
+	const jwtClient = new google.auth.JWT(
+		client_email,
+		null,
+		private_key,
+		['https://www.googleapis.com/auth/drive']);
+
+	fs.readFile(TOKEN_PATH, (err, token) => {
+		if (err) return getAccessTokenJWT(jwtClient, callback);
+		jwtClient.setCredentials(JSON.parse(token));
+
+		driveAPI = google.drive({
+			version: 'v3',
+			auth: jwtClient
+		});
+
+		retrieveAllFiles(options).then(data => parentPort.postMessage(data)).catch(console.error);
+	});
+} else {
+	const {
+		client_secret,
+		client_id,
+		redirect_uris
+	} = credentials.installed;
+
+	const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+
+	fs.readFile(TOKEN_PATH, (err, token) => {
+		if (err) return getAccessToken(oAuth2Client, callback);
+		oAuth2Client.setCredentials(JSON.parse(token));
+
+		driveAPI = google.drive({
+			version: 'v3',
+			auth: oAuth2Client
+		});
+
+		retrieveAllFiles(options).then(data => parentPort.postMessage(data)).catch(console.error);
+	});
+}
 
 options.q = `\'${folder.id}\' in parents and trashed = false and mimeType != \'application/vnd.google-apps.folder\'`;
 delete options.pageToken;
@@ -43,5 +76,3 @@ function retrieveAllFiles(options, result = []) {
 		}
 	});
 }
-
-retrieveAllFiles(options).then(data => parentPort.postMessage(data)).catch(console.error);
