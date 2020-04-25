@@ -256,7 +256,7 @@ async function choice() {
 		if (flags.choice) flags.choice = null;
 		choice();
 	}
-}1
+}
 
 async function listDriveFiles(driveId = null) {
 	if (!conf.listNSP && !conf.listNSZ && !conf.listXCI) {
