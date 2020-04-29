@@ -651,7 +651,10 @@ function runFolderWorker(workerData) {
 			folderBar.increment();
 			resolve(data);
 		});
-		worker.on('error', reject);
+		worker.on('error', (err) => {
+			console.error(err);
+			reject(err)
+		});
 		worker.on('exit', (code) => {
 		if (code !== 0)
 			reject(new Error(`Worker stopped with exit code ${code}`));

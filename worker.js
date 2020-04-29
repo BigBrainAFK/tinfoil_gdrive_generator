@@ -70,9 +70,16 @@ function retrieveAllFiles(options, result = []) {
 			options.pageToken = resp.data.nextPageToken;
 	
 			const res = await retrieveAllFiles(options, result).catch(reject);
+
+			await timeout(500);
+
 			resolve(res);
 		} else {
 			resolve(result);
 		}
 	});
+}
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
