@@ -1,7 +1,7 @@
 # Tinfoil index.json generator
 
 This is a small node.js script that will allow you to easily generate an index.html for use with Tinfoil.
-
+**!!!THIS TOOL ONLY WORKS WITH A VALID SXOS LICENSE ON THE SWITCH CONSOLE!!!**
 
 # Installation
 
@@ -20,7 +20,6 @@ This is a small node.js script that will allow you to easily generate an index.h
 # Usage
 
 Here I will explain how to use this tool in a bit more detail.
-**!!!THIS TOOL ONLY WORKS WITH A VALID SXOS LICENSE ON THE SWITCH CONSOLE!!!**
 
 ## Interactive
 
