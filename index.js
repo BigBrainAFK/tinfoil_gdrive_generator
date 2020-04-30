@@ -3,7 +3,6 @@
 const progArgs = process.argv.slice(2);
 const flags = {};
 flags.auto = getArgument('auto', true, false);
-flags.auth = getArgument('auth', true, false);
 flags.deauth = getArgument('deauth', true, false);
 flags.debug = getArgument('debug', true, false);
 flags.choice = getArgument('source', false);
@@ -282,8 +281,6 @@ async function listDriveFiles(driveId = null) {
 	if (driveId) {
 		folderOptions.driveId = driveId;
 		folderOptions.corpora = 'drive';
-		folderOptions.includeItemsFromAllDrives = true;
-		folderOptions.supportsAllDrives = true;
 	} else {
 		folderOptions.corpora = 'user';
 	}
@@ -329,8 +326,6 @@ async function addToFile(folderId, driveId = null) {
 		if (driveId) {
 			options.driveId = driveId;
 			options.corpora = 'drive';
-			options.includeItemsFromAllDrives = true;
-			options.supportsAllDrives = true;
 		} else {
 			options.spaces = 'drive';
 			options.corpora = 'user';
@@ -363,51 +358,11 @@ async function addToFile(folderId, driveId = null) {
 					size: Number(file.size)
 				}
 
-				if (flags.oldFormat) {
-					const replace = [/_sr/g, /_SR/g, /_sc/g, /\(UNLOCKER\)/g, /_unlocker/g, /_SC/g];
-					let gamename = file.name;
-					
-					for (subStr of replace) {
-						gamename = Buffer.from(gamename.replace(subStr, ''), 'utf8').toString('utf8');
-					}
+				const titleid = /(\[[0-9A-Fa-f]{16}\])/gi.exec(file.name)[0];
 
-					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${encodeURIComponent(gamename).replace('+', '%20').replace(' ', '%20')}`;
-				} else {
-					const titleid = /(\[[0-9A-Fa-f]{16}\])/gi.exec(file.name)[0];
+				jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
 
-					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
-				}
-
-				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
-					const permsToDelete = file.permissionIds.filter(val => val.length > 20);
-
-					const permissionRequest = {
-						fileId: file.id,
-						supportsAllDrives: true
-					};
-
-					for (permId of permsToDelete) {
-						if (permId === 'anyoneWithLink') continue;
-						permissionRequest.permissionId = permId;
-
-						await driveAPI.permissions.delete(permissionRequest).catch(reject);
-						debugMessage(`Delete permId ${permId} from fileId ${file.id}`);
-					}
-				}
-
-				if (!file.permissionIds.includes('anyoneWithLink') && flags.auth) {
-					const permissionRequest = {
-						fileId: file.id,
-						requestBody: {
-						  role: 'reader',
-						  type: 'anyone',
-						},
-						supportsAllDrives: true
-					};
-
-					await driveAPI.permissions.create(permissionRequest).catch(reject);
-					debugMessage('Created perms');
-				} else if (file.permissionIds.includes('anyoneWithLink') && flags.deauth) {
+				if (file.permissionIds.includes('anyoneWithLink') && flags.deauth) {
 					const permissionRequest = {
 						fileId: file.id,
 						permissionId: 'anyoneWithLink',
@@ -416,10 +371,6 @@ async function addToFile(folderId, driveId = null) {
 
 					await driveAPI.permissions.delete(permissionRequest).catch(reject);
 					debugMessage('Deleted perms');
-				} else if (!flags.auth) {
-					debugMessage('Automatig authing disabled. Won\'t set permissions.')
-				} else {
-					debugMessage('Already has perms');
 				}
 
 				fileListJson.files.push(jsonFile);
@@ -472,8 +423,6 @@ async function doUpload(driveId = null) {
 		if (driveId) {
 			requestData.driveId = driveId;
 			requestData.corpora = 'drive';
-			requestData.includeItemsFromAllDrives = true;
-			requestData.supportsAllDrives = true;
 		}
 
 		if (conf.indexFileId) {	

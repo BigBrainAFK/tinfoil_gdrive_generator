@@ -20,6 +20,7 @@ This is a small node.js script that will allow you to easily generate an index.h
 # Usage
 
 Here I will explain how to use this tool in a bit more detail.
+**!!!THIS TOOL ONLY WORKS WITH A VALID SXOS LICENSE ON THE SWITCH CONSOLE!!!**
 
 ## Interactive
 
@@ -33,7 +34,6 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 |Flag|Required|Argument value|Description
 |--|--|--|--|
-|`-auth`|❌||Auth every file|
 |`-auto`|❌||Non-interactive mode|
 |`-debug`|❌||Print debug messages|
 |`-source`|❌|Number or Google Shared Drive ID|Specify source Drive|
@@ -48,10 +48,6 @@ The auth flag will set every file the script goes through to be accessible by an
 This is only for people who dont indent to give others direct access to the stash but only via the index file.
 The faster and more prefered way is to auth Tinfoil with GDrive by setting up the credentials of the right account in NUT.
 Then connect your Tinfoil to nut either via USB or Network. After that you can access the index file content even without sharing each file.
-
-#### oldFormat flag note
-The `https:` url format is rather unstable and thus not recommended to use.
-If you still insist on using it this is the flag you want to use.
 
 #### keepMissingId flag note
 Tinfoil will be dramatically slowed down by files without title ids in them.
