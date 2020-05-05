@@ -281,8 +281,12 @@ async function listDriveFiles(driveId = null) {
 	if (driveId) {
 		folderOptions.driveId = driveId;
 		folderOptions.corpora = 'drive';
+		folderOptions.includeItemsFromAllDrives = true;
+		folderOptions.supportsAllDrives = true;
 	} else {
 		folderOptions.corpora = 'user';
+		folderOptions.includeItemsFromAllDrives = true;
+		folderOptions.supportsAllDrives = true;
 	}
 		
 	await addToFile(driveId, driveId).catch(console.error);
@@ -326,9 +330,13 @@ async function addToFile(folderId, driveId = null) {
 		if (driveId) {
 			options.driveId = driveId;
 			options.corpora = 'drive';
+			options.includeItemsFromAllDrives = true;
+			options.supportsAllDrives = true;
 		} else {
 			options.spaces = 'drive';
 			options.corpora = 'user';
+			options.includeItemsFromAllDrives = true;
+			options.supportsAllDrives = true;
 		}
 	
 		files = await retrieveAll(rootfolders, options).catch(reject);
@@ -423,6 +431,8 @@ async function doUpload(driveId = null) {
 		if (driveId) {
 			requestData.driveId = driveId;
 			requestData.corpora = 'drive';
+			requestData.includeItemsFromAllDrives = true;
+			requestData.supportsAllDrives = true;
 		}
 
 		if (conf.indexFileId) {	
@@ -485,6 +495,7 @@ function retrieveAll(folderIds, options) {
 				folder,
 				options
 			}));
+			await timeout(111);
 		}
 
 		const resp = await Promise.all(promises).catch(console.error);
@@ -615,4 +626,8 @@ function debugMessage(text) {
 	if (flags.debug) {
 		console.log(text);
 	}
+}
+
+function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

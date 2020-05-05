@@ -71,7 +71,7 @@ function retrieveAllFiles(options, result = []) {
 	
 			const res = await retrieveAllFiles(options, result).catch(reject);
 
-			await timeout(500);
+			await timeout(321);
 
 			resolve(res);
 		} else {
