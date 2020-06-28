@@ -3,6 +3,7 @@
 const progArgs = process.argv.slice(2);
 const flags = {};
 flags.auto = getArgument('auto', true, false);
+flags.auth = getArgument('auth', true, false);
 flags.deauth = getArgument('deauth', true, false);
 flags.debug = getArgument('debug', true, false);
 flags.choice = getArgument('source', false);
@@ -368,9 +369,42 @@ async function addToFile(folderId, driveId = null) {
 
 				const titleid = /(\[[0-9A-Fa-f]{16}\])/gi.exec(file.name)[0];
 
-				jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
+				if (flags.oldFormat) {
+					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${titleid}${path.extname(file.name)}`;
+				} else {
+					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
+				}
 
-				if (file.permissionIds.includes('anyoneWithLink') && flags.deauth) {
+				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
+					const permsToDelete = file.permissionIds.filter(val => val.length > 20);
+
+					const permissionRequest = {
+						fileId: file.id,
+						supportsAllDrives: true
+					};
+
+					for (permId of permsToDelete) {
+						if (permId === 'anyoneWithLink') continue;
+						permissionRequest.permissionId = permId;
+
+						await driveAPI.permissions.delete(permissionRequest).catch(reject);
+						debugMessage(`Delete permId ${permId} from fileId ${file.id}`);
+					}
+				}
+
+				if (!file.permissionIds.includes('anyoneWithLink') && flags.auth) {
+					const permissionRequest = {
+						fileId: file.id,
+						requestBody: {
+						  role: 'reader',
+						  type: 'anyone',
+						},
+						supportsAllDrives: true
+					};
+
+					await driveAPI.permissions.create(permissionRequest).catch(reject);
+					debugMessage('Created perms');
+				} else if (file.permissionIds.includes('anyoneWithLink') && flags.deauth) {
 					const permissionRequest = {
 						fileId: file.id,
 						permissionId: 'anyoneWithLink',
@@ -379,6 +413,10 @@ async function addToFile(folderId, driveId = null) {
 
 					await driveAPI.permissions.delete(permissionRequest).catch(reject);
 					debugMessage('Deleted perms');
+				} else if (!flags.auth) {
+					debugMessage('Automatig authing disabled. Won\'t set permissions.')
+				} else {
+					debugMessage('Already has perms');
 				}
 
 				fileListJson.files.push(jsonFile);
@@ -558,17 +596,24 @@ function retrieveAllDrives(options, result = []) {
 
 function encrypt() {
 	return new Promise((resolve, reject) => {
-		const encrypter = require('child_process').spawn('node', ['encrypt.js', outputPath, encPath]);
+		if (flags.oldFormat) {
+			fs.copyFileSync(outputPath, encPath);
 
-		encrypter.stdout.pipe(process.stdout);
-		encrypter.stderr.pipe(process.stderr);
-
-		encrypter.on('exit', () => {
-			if (fs.existsSync(encPath) && flags.makeTfl)
-				fs.copyFileSync(encPath, tflPath);
-
-			resolve();
-		});
+			if (fs.existsSync(outputPath) && flags.makeTfl)
+				fs.copyFileSync(outputPath, tflPath);
+		} else {
+			const encrypter = require('child_process').spawn('node', ['encrypt.js', outputPath, encPath]);
+	
+			encrypter.stdout.pipe(process.stdout);
+			encrypter.stderr.pipe(process.stderr);
+	
+			encrypter.on('exit', () => {
+				if (fs.existsSync(encPath) && flags.makeTfl)
+					fs.copyFileSync(encPath, tflPath);
+	
+				resolve();
+			});
+		}
 	});
 }
 

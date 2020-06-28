@@ -33,6 +33,7 @@ Here I will explain on how to automate this tool for usage with cron etc.
 
 |Flag|Required|Argument value|Description
 |--|--|--|--|
+|`-auth`|❌||Auth every file|
 |`-auto`|❌||Non-interactive mode|
 |`-debug`|❌||Print debug messages|
 |`-source`|❌|Number or Google Shared Drive ID|Specify source Drive|
@@ -47,6 +48,12 @@ The auth flag will set every file the script goes through to be accessible by an
 This is only for people who dont indent to give others direct access to the stash but only via the index file.
 The faster and more prefered way is to auth Tinfoil with GDrive by setting up the credentials of the right account in NUT.
 Then connect your Tinfoil to nut either via USB or Network. After that you can access the index file content even without sharing each file.
+**This is required for oldFormat to work. If you have an SXOS License its recommended to not use the `-auth` and `-oldFormat` flags.**
+
+#### oldFormat flag note
+The `https:` url format is rather unstable and thus not recommended to use.
+If you still insist on using it this is the flag you want to use.
+**This will also mean your Index file is NOT encrypted and anyone can get the Google Drive Links in plain text if they get the link to the index file or the `.tfl` file.**
 
 #### keepMissingId flag note
 Tinfoil will be dramatically slowed down by files without title ids in them.
