@@ -56,7 +56,7 @@ conf.listXCI = conf.listXCI || false;
 conf.listCustomXCI = conf.listCustomXCI || false;
 conf.indexFileId = conf.indexFileId || '';
 conf.lastCommit = conf.lastCommit || '';
-conf.motd = conf.motd || 'Loaded custom index';
+conf.motd = conf.motd === null ? '': conf.motd;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const TOKEN_PATH = 'gdrive.token';
@@ -87,9 +87,12 @@ setInterval(() => {
 }, 1000);
 
 const fileListJson = {
-	files: [],
-	success: conf.motd,
+	files: []
 };
+
+if (conf.modt !== '') {
+	fileListJson.success = conf.motd;
+}
 
 const rl = readline.createInterface({
 	input: process.stdin,
