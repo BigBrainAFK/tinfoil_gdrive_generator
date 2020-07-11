@@ -368,11 +368,14 @@ async function addToFile(folderId, driveId = null) {
 				}
 
 				const titleid = /(\[[0-9A-Fa-f]{16}\])/gi.exec(file.name)[0];
+				const resultVersionRegex = /(\[v[0-9]+\])/gi.exec(file.name);
+
+				const version = resultVersionRegex ? resultVersionRegex[0] : '';
 
 				if (flags.oldFormat) {
 					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${titleid}${path.extname(file.name)}`;
 				} else {
-					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${path.extname(file.name)}`;
+					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${version}${path.extname(file.name)}`;
 				}
 
 				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {

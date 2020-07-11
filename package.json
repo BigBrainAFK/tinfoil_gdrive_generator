@@ -1,7 +1,7 @@
 {
 	"name": "tinfoil_gdrive_generator",
 	"description": "Builds a HTML file for usage in Tinfoil",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"main": "index.js",
 	"engines": {
 		"node": ">=13.7.0"
