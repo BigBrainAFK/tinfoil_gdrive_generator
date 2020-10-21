@@ -378,7 +378,7 @@ async function addToFile(folderId, driveId = null) {
 				if (flags.oldFormat) {
 					jsonFile.url = `https://docs.google.com/uc?export=download&id=${file.id}#${titleid}${path.extname(file.name)}`;
 				} else {
-					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${version}${path.extname(file.name)}`;
+					jsonFile.url = `gdrive:${flags.auth ? '/' : ''}${file.id}#${titleid}${version}${file.name.match(/^(?<title>.*)\s{0,1}\[.*\]+(\s|\S)*\..*$/u).groups['title']}${path.extname(file.name)}`;
 				}
 
 				if (file.permissionIds.filter(val => /\D{1}/g.test(val)).length > 0 && flags.auth) {
