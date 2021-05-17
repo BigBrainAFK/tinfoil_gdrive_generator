@@ -585,6 +585,8 @@ function retrieveAllFolders(options, result = []) {
 
 function retrieveAllDrives(options, result = []) {
 	return new Promise(async (resolve, reject) => {
+		if (!driveAPI.drives) throw new Error("DriveAPI not initiliazed and/or account credentials do not have any shared drives.");
+
 		const resp = await driveAPI.drives.list(options).catch(reject);
 	
 		result = result.concat(resp.data.drives);
